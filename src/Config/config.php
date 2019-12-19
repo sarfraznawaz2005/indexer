@@ -8,6 +8,11 @@ return [
      */
     'enabled' => env('QUERY_WATCH_ENABLED', null),
 
+
+    'watched_tables' => [
+        'users' => ['email'],
+    ],
+
     /*
      * Define the output format that you want to use. Multiple classes are supported.
      * Available options are:
