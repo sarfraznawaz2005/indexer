@@ -146,7 +146,7 @@ class QueryWatch
 
     protected function explainQuery(string $sql, QueryExecuted $event)
     {
-        dump($sql);
+        //dump($sql);
 
         self::$counter++;
 
