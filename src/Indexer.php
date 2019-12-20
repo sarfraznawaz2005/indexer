@@ -133,9 +133,7 @@ class Indexer
      */
     protected function getTableNameFromQuery(): string
     {
-        $sql = strtolower($this->getSql());
-
-        $table = trim(str_ireplace(['from', '`'], '', stristr($sql, 'from')));
+        $table = trim(str_ireplace(['from', '`'], '', stristr($this->getSql(), 'from')));
 
         return strtok($table, ' ');
     }
