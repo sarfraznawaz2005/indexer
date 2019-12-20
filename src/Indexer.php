@@ -3,9 +3,11 @@
 namespace Sarfraznawaz2005\Indexer;
 
 use Exception;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Http\Events\RequestHandled;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -22,6 +24,9 @@ class Indexer
 
     protected $unremovedIndexes = [];
 
+    /**
+     * Indexer constructor.
+     */
     public function __construct()
     {
         if ($this->isEnabled() && $this->isDetecting()) {
@@ -30,6 +35,9 @@ class Indexer
         }
     }
 
+    /**
+     * @return bool
+     */
     public function isEnabled(): bool
     {
         $configEnabled = config('indexer.enabled', false);
@@ -41,21 +49,37 @@ class Indexer
         return $configEnabled;
     }
 
+    /**
+     * Enable Indexer
+     */
     public function enableDetection()
     {
         $this->detectQueries = true;
     }
 
+    /**
+     * Disable Indexer
+     */
     public function disableDetection()
     {
         $this->detectQueries = false;
     }
 
+    /**
+     * Checks if Indexer is watching queries.
+     *
+     * @return bool
+     */
     public function isDetecting(): bool
     {
         return $this->detectQueries;
     }
 
+    /**
+     * Starts indexing process.
+     *
+     * @param QueryExecuted $event
+     */
     public function analyzeQuery(QueryExecuted $event)
     {
         if (!$this->isDetecting()) {
@@ -70,16 +94,43 @@ class Indexer
         }
     }
 
+    /**
+     * Get current SQL query.
+     *
+     * @return string
+     */
     protected function getSql(): string
     {
         return $this->replaceBindings($this->queryEvent);
     }
 
+    /**
+     * Gets current query model name.
+     *
+     * @return string
+     */
+    protected function getModelName(): string
+    {
+        $backtrace = collect(debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT, 50));
+
+        $modelTrace = $backtrace->first(static function ($trace) {
+            return Arr::get($trace, 'object') instanceof Builder;
+        });
+
+        return $modelTrace ? get_class($modelTrace['object']->getModel()) : '';
+    }
+
+    /**
+     * @return bool
+     */
     protected function isSelectQuery(): bool
     {
         return strtolower(strtok($this->getSql(), ' ')) === 'select';
     }
 
+    /**
+     * @return string
+     */
     protected function getTableNameFromQuery(): string
     {
         $sql = strtolower($this->getSql());
@@ -89,6 +140,9 @@ class Indexer
         return strtok($table, ' ');
     }
 
+    /**
+     * Tries applying given indexes.
+     */
     protected function tryIndexes()
     {
         $addedIndexes = [];
@@ -134,6 +188,11 @@ class Indexer
         $this->enableDetection();
     }
 
+    /**
+     * Gets already applied indexes on the table.
+     *
+     * @return array
+     */
     protected function getTableOriginalIndexes(): array
     {
         $table = $this->table;
@@ -141,6 +200,12 @@ class Indexer
         return collect(DB::select("SHOW INDEXES FROM $table"))->pluck('Key_name')->toArray();
     }
 
+    /**
+     * Checks if we have any un-removed indexes after applying indexes.
+     *
+     * @param $tableOriginalIndexes
+     * @return array
+     */
     protected function checkAnyUnremovedIndexes($tableOriginalIndexes): array
     {
         $tableOriginalIndexesAfter = $this->getTableOriginalIndexes();
@@ -152,6 +217,12 @@ class Indexer
         return [];
     }
 
+    /**
+     * Applies given indexes to the table, builds EXPLAIN query and then removes added indexes.
+     *
+     * @param array $indexes
+     * @return array
+     */
     protected function applyIndexes(array $indexes): array
     {
         $addedIndexes = [];
@@ -172,6 +243,10 @@ class Indexer
         return $addedIndexes;
     }
 
+    /**
+     * @param $index
+     * @return bool
+     */
     protected function indexExists($index): bool
     {
         $table = $this->table;
@@ -181,6 +256,9 @@ class Indexer
         return in_array($index, $indexes, true);
     }
 
+    /**
+     * @param $index
+     */
     protected function addIndex($index)
     {
         $table = $this->table;
@@ -194,6 +272,9 @@ class Indexer
         }
     }
 
+    /**
+     * @param $index
+     */
     protected function removeIndex($index)
     {
         $table = $this->table;
@@ -209,6 +290,11 @@ class Indexer
         }
     }
 
+    /**
+     * Removes indexes given in config eg not ones already applied on the table.
+     *
+     * @param $addedIndexes
+     */
     protected function removeUserDefinedIndexes($addedIndexes)
     {
         foreach ($addedIndexes as $index) {
@@ -216,6 +302,11 @@ class Indexer
         }
     }
 
+    /**
+     * Collects EXPLAIN info and stores in queries var.
+     *
+     * @param $index
+     */
     protected function explainQuery($index)
     {
         $event = $this->queryEvent;
@@ -320,6 +411,9 @@ class Indexer
         return "<pre>\n" . $line . implode($line, $rows) . $line . "</pre>\n";
     }
 
+    /**
+     * Outputs findings to current page.
+     */
     public function outputResults()
     {
         $output = '';
