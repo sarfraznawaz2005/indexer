@@ -123,7 +123,7 @@ class Indexer
             } catch (Exception $e) {
 
             } finally {
-                // remove any custom added indexes
+                // just in case - again remove any custom added indexes
                 $this->removeUserDefinedIndexes($addedIndexes);
                 $this->removeUserDefinedIndexes($addedIndexesComposite);
             }
