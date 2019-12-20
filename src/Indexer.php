@@ -90,7 +90,9 @@ class Indexer
         $this->table = $this->getTableNameFromQuery();
 
         if ($this->isSelectQuery()) {
+            $this->disableDetection();
             $this->tryIndexes();
+            $this->enableDetection();
         }
     }
 
@@ -146,8 +148,6 @@ class Indexer
         $addedIndexes = [];
         $addedIndexesComposite = [];
 
-        $this->disableDetection();
-
         $table = $this->table;
 
         if (array_key_exists($table, config('indexer.watched_tables', []))) {
@@ -182,8 +182,6 @@ class Indexer
                 $this->unremovedIndexes = $this->checkAnyUnremovedIndexes($tableOriginalIndexes);
             }
         }
-
-        $this->enableDetection();
     }
 
     /**
