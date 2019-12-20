@@ -30,11 +30,7 @@ class Indexer
 
     public function isEnabled(): bool
     {
-        $configEnabled = value(config('indexer.enabled'));
-
-        if ($configEnabled === null) {
-            $configEnabled = config('app.debug');
-        }
+        $configEnabled = config('indexer.enabled', false);
 
         if ($configEnabled) {
             $this->detectQueries = true;
