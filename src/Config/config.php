@@ -11,6 +11,7 @@ return [
      * These tables will be watched by Indexer and specified indexes will be tested.
      */
     'watched_tables' => [
+        /*
         'users' => [
             // list of already existing indexes to try
             'try_table_indexes' => ['email'],
@@ -21,5 +22,6 @@ return [
                 ['name', 'email'],
             ],
         ],
+        */
     ],
 ];

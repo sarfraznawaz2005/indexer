@@ -20,6 +20,8 @@ class Indexer
 
     protected $queries = [];
 
+    protected $unremovedIndexes = [];
+
     public function __construct()
     {
         if ($this->isEnabled() && $this->isDetecting()) {
@@ -99,6 +101,7 @@ class Indexer
         if (array_key_exists($table, config('indexer.watched_tables', []))) {
             $tableIndexeOptions = config("indexer.watched_tables.$table", []);
 
+            $tableOriginalIndexes = $this->getTableOriginalIndexes();
             $tableIndexes = $tableIndexeOptions['try_table_indexes'] ?? [];
             $newIndexes = $tableIndexeOptions['try_indexes'] ?? [];
             $compositeIndexes = $tableIndexeOptions['try_composite_indexes'] ?? [];
@@ -122,10 +125,31 @@ class Indexer
                 // just in case - again remove any custom added indexes
                 $this->removeUserDefinedIndexes($addedIndexes);
                 $this->removeUserDefinedIndexes($addedIndexesComposite);
+
+                // make sure we have deleted added indexes
+                $this->unremovedIndexes = $this->checkAnyUnremovedIndexes($tableOriginalIndexes);
             }
         }
 
         $this->enableDetection();
+    }
+
+    protected function getTableOriginalIndexes(): array
+    {
+        $table = $this->table;
+
+        return collect(DB::select("SHOW INDEXES FROM $table"))->pluck('Key_name')->toArray();
+    }
+
+    protected function checkAnyUnremovedIndexes($tableOriginalIndexes): array
+    {
+        $tableOriginalIndexesAfter = $this->getTableOriginalIndexes();
+
+        if ($tableOriginalIndexes !== $tableOriginalIndexesAfter) {
+            return array_diff($tableOriginalIndexesAfter, $tableOriginalIndexes);
+        }
+
+        return [];
     }
 
     protected function applyIndexes(array $indexes): array
@@ -200,15 +224,10 @@ class Indexer
         $result = DB::select(DB::raw('EXPLAIN ' . $sql))[0];
 
         if ($result) {
-
-            if (is_array($index)) {
-                $index = $this->getCompositeIndexName($index);
-            }
-
             $result = (array)$result;
             $result['sql'] = $sql;
             $result['time'] = number_format($event->time, 2);
-            $result['index_name'] = $index;
+            $result['index_name'] = $this->getLaravelIndexName($index);
 
             $this->queries[] = $result;
         }
@@ -217,15 +236,19 @@ class Indexer
     /**
      * Gets composite indexes name based on how Laravel makes those names by default.
      *
-     * @param array $compositeIndexes
+     * @param string|array $index
      * @return string
      */
-    protected function getCompositeIndexName(array $compositeIndexes): string
+    protected function getLaravelIndexName($index): string
     {
         $name[] = $this->table;
 
-        foreach ($compositeIndexes as $index) {
+        if (!is_array($index)) {
             $name[] = $index;
+        } else {
+            foreach ($index as $indexItem) {
+                $name[] = $indexItem;
+            }
         }
 
         $name[] = 'index';
@@ -303,14 +326,15 @@ class Indexer
 
         if ($this->queries) {
             $output .= '<style>';
-            $output .= 'body,html { line-height:100% !important; background: #edf1f3 !important; }';
+            $output .= 'body,html { line-height:100% !important; background: #edf1f3 !important;}';
             $output .= 'pre { color:#000 !important; padding:10px; !important; margin:0 !important; }';
-            $output .= '.indexer { width:100%; height:100%; position: fixed; background: #edf1f3; top:0; left:0; color:#000; padding:25px; z-index:999999999; margin:0 0 100px 0; overflow:auto; }';
+            $output .= '.indexer { width:100%; height:100%; position: fixed; background: #edf1f3; top:0; left:0; color:#000; padding:25px; z-index:999999999; margin:0; overflow:auto; }';
             $output .= '.indexer_section { background: #fff; margin:0 0 20px 0; border:1px solid #dae0e5; border-radius:5px; }';
             $output .= '.indexer_section_details { padding:5px; font-size:.90rem; }';
             $output .= '.left { float: left; }';
             $output .= '.right { float: right; }';
             $output .= '.clear { clear: both; }';
+            $output .= '.error { background:#ff6586; color:#fff; font-weight:bold; text-align:center; border:1px solid red; padding:10px; margin:10px 0;}';
             $output .= '</style>';
 
             $output .= '<div class="indexer">';
@@ -330,8 +354,15 @@ class Indexer
                 $output .= '</div>';
             }
 
+            if ($this->unremovedIndexes) {
+                $output .= '<div class="error">Following indexes could not be removed, please remove them manually:</div>';
+                $output .= implode('<br> - ', $this->unremovedIndexes);
+            }
+
+            $output .= '<div style="margin:0 0 100px 0 !important;"></div>';
             $output .= '</div>';
         }
+
 
         echo $output;
     }
