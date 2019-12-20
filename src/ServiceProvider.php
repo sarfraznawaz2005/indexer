@@ -17,8 +17,7 @@ class ServiceProvider extends BaseServiceProvider
 
     public function register()
     {
-        $this->app->singleton(Indexer::class);
-        $this->app->alias(Indexer::class, 'indexer');
+        $this->app->make(Indexer::class);
 
         $this->mergeConfigFrom(__DIR__ . '/Config/config.php', 'indexer');
     }

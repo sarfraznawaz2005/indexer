@@ -37,7 +37,7 @@
   "extra": {
     "laravel": {
       "providers": [
-        "Sarfraznawaz2005\\QueryWatch\\ServiceProvider"
+        "Sarfraznawaz2005\\Indexer\\ServiceProvider"
       ]
     }
   },

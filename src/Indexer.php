@@ -2,42 +2,35 @@
 
 namespace Sarfraznawaz2005\Indexer;
 
+use Exception;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Collection;
+use Illuminate\Foundation\Http\Events\RequestHandled;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Str;
 
 class Indexer
 {
-    private $detectQueries = false;
+    protected $detectQueries = false;
 
-    private static $counter;
+    /** @var QueryExecuted */
+    protected $queryEvent;
 
-    /** @var Collection */
-    private $queries;
+    protected $table = '';
+
+    protected $queries = [];
 
     public function __construct()
     {
-        $this->queries = Collection::make();
-
-        @unlink(__DIR__ . '/log.html');
-    }
-
-    public function boot()
-    {
-        app()->events->listen(QueryExecuted::class, [$this, 'logQuery']);
-
-        foreach ($this->getOutputTypes() as $outputType) {
-            app()->singleton($outputType);
-            app($outputType)->boot();
+        if ($this->isEnabled() && $this->isDetecting()) {
+            app()->events->listen(QueryExecuted::class, [$this, 'analyzeQuery']);
+            app()->events->listen(RequestHandled::class, [$this, 'outputResults']);
         }
     }
 
     public function isEnabled(): bool
     {
-        $configEnabled = value(config('querywatch.enabled'));
+        $configEnabled = value(config('indexer.enabled'));
 
         if ($configEnabled === null) {
             $configEnabled = config('app.debug');
@@ -65,132 +58,183 @@ class Indexer
         return $this->detectQueries;
     }
 
-
-    public function logQuery(QueryExecuted $event)
+    public function analyzeQuery(QueryExecuted $event)
     {
-        $time = $event->time;
+        if (!$this->isDetecting()) {
+            return;
+        }
 
-        $sql = $this->replaceBindings($event);
-        $isSelectQuery = strtolower(strtok($sql, ' ')) === 'select';
+        $this->queryEvent = $event;
+        $this->table = $this->getTableNameFromQuery();
 
-        if ($isSelectQuery) {
-
-            $hasChance = $this->tryIndexes($sql, $event);
-
-            if ($hasChance) {
-                $caller = $this->getCallerFromStackTrace();
-
-                $this->queries[] = [
-                    'connection' => $event->connectionName,
-                    'sql' => $sql,
-                    'time' => number_format($time, 2),
-                    'file' => $caller['file'],
-                    'line' => $caller['line'],
-                ];
-            }
+        if ($this->isSelectQuery()) {
+            $this->tryIndexes();
         }
     }
 
-    protected function tryIndexes(string $sql, QueryExecuted $event)
+    protected function getSql(): string
     {
+        return $this->replaceBindings($this->queryEvent);
+    }
+
+    protected function isSelectQuery(): bool
+    {
+        return strtolower(strtok($this->getSql(), ' ')) === 'select';
+    }
+
+    protected function getTableNameFromQuery(): string
+    {
+        $sql = strtolower($this->getSql());
+
         $table = trim(str_ireplace(['from', '`'], '', stristr($sql, 'from')));
-        $table = strtok($table, ' ');
 
-        if (array_key_exists($table, config('querywatch.watched_tables', []))) {
-            $indexes = config("querywatch.watched_tables.$table", []);
-
-            // todo: index combinations
-
-            foreach ($indexes as $index) {
-                if (!$this->indexExists($table, $index)) {
-                    $this->addIndex($table, $index);
-                }
-
-                $this->explainQuery($sql, $event);
-
-                $this->removeIndex($table, $index);
-            }
-        }
+        return strtok($table, ' ');
     }
 
-    protected function indexExists($table, $index): bool
+    protected function tryIndexes()
     {
+        $addedIndexes = [];
+        $addedIndexesComposite = [];
+
+        $this->disableDetection();
+
+        $table = $this->table;
+
+        if (array_key_exists($table, config('indexer.watched_tables', []))) {
+            $tableIndexeOptions = config("indexer.watched_tables.$table", []);
+
+            $tableIndexes = $tableIndexeOptions['try_table_indexes'] ?? [];
+            $newIndexes = $tableIndexeOptions['try_indexes'] ?? [];
+            $compositeIndexes = $tableIndexeOptions['try_composite_indexes'] ?? [];
+
+            $indexes = array_merge($tableIndexes, $newIndexes);
+
+            try {
+
+                // try individual indexes
+                $addedIndexes = $this->applyIndexes($indexes);
+
+                // remove any custom added indexes
+                $this->removeUserDefinedIndexes($addedIndexes);
+
+                // try composite indexes
+                $addedIndexesComposite = $this->applyIndexes($compositeIndexes);
+
+            } catch (Exception $e) {
+
+            } finally {
+                // remove any custom added indexes
+                $this->removeUserDefinedIndexes($addedIndexes);
+                $this->removeUserDefinedIndexes($addedIndexesComposite);
+            }
+        }
+
+        $this->enableDetection();
+    }
+
+    protected function applyIndexes(array $indexes): array
+    {
+        $addedIndexes = [];
+
+        foreach ($indexes as $index) {
+            if (!$this->indexExists($index)) {
+                $addedIndexes[] = $index;
+
+                $this->addIndex($index);
+                $this->explainQuery($index);
+                $this->removeIndex($index);
+
+            } else {
+                $this->explainQuery($index);
+            }
+        }
+
+        return $addedIndexes;
+    }
+
+    protected function indexExists($index): bool
+    {
+        $table = $this->table;
+
         $indexes = collect(DB::select("SHOW INDEXES FROM $table"))->pluck('Key_name')->toArray();
 
         return in_array($index, $indexes, true);
     }
 
-    protected function addIndex($table, $index)
+    protected function addIndex($index)
     {
+        $table = $this->table;
+
         try {
             Schema::table($table, static function (Blueprint $table) use ($index) {
-                $table->index([$index]);
+                $table->index($index);
             });
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
 
         }
     }
 
-    protected function removeIndex($table, $index)
+    protected function removeIndex($index)
     {
+        $table = $this->table;
+
         try {
             Schema::table($table, static function (Blueprint $table) use ($index) {
-                $table->dropIndex([$index]);
+
+                is_array($index) ? $table->dropIndex($index) : $table->dropIndex([$index]);
+
             });
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
 
         }
     }
 
-    protected function explainQuery(string $sql, QueryExecuted $event)
+    protected function removeUserDefinedIndexes($addedIndexes)
     {
-        //dump($sql);
-
-        self::$counter++;
-
-        $output = '<strong>' . (self::$counter) . ' - ' . number_format($event->time, 2) . 'ms</strong><br>' . SqlFormatter::format($sql);
-
-        $result = DB::select(DB::raw('EXPLAIN ' . $sql));
-
-        if (isset($result[0])) {
-            $output .= $this->table([(array)$result[0]]);
+        foreach ($addedIndexes as $index) {
+            $this->removeIndex($index);
         }
-
-        $output = '<div style="background: #F7F0CB; margin: 0 20px 0 20px; overflow:auto; color:#000; padding: 5px; width:auto;">' . $output . '</div>';
-
-        file_put_contents(__DIR__ . '/log.html', $output, FILE_APPEND);
     }
 
-    /**
-     * Find the first frame in the stack trace outside of Telescope/Laravel.
-     *
-     * @return array
-     */
-    protected function getCallerFromStackTrace(): array
+    protected function explainQuery($index)
     {
-        $trace = collect(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS))->forget(0);
+        $event = $this->queryEvent;
+        $sql = $this->getSql();
 
-        return $trace->first(function ($frame) {
-            if (!isset($frame['file'])) {
-                return false;
+        $result = DB::select(DB::raw('EXPLAIN ' . $sql))[0];
+
+        if ($result) {
+
+            if (is_array($index)) {
+                $index = $this->getCompositeIndexName($index);
             }
 
-            return !Str::contains($frame['file'],
-                base_path('vendor' . DIRECTORY_SEPARATOR . $this->ignoredVendorPath())
-            );
-        });
+            $result = (array)$result;
+            $result['sql'] = $sql;
+            $result['time'] = number_format($event->time, 2);
+            $result['index_name'] = $index;
+
+            $this->queries[] = $result;
+        }
     }
 
     /**
-     * Choose the frame outside of either Telescope/Laravel or all packages.
+     * Gets composite indexes name based on how Laravel makes those names by default.
      *
-     * @return string|null
+     * @param array $compositeIndexes
+     * @return string
      */
-    protected function ignoredVendorPath()
+    protected function getCompositeIndexName(array $compositeIndexes): string
     {
-        if (!($this->options['ignore_packages'] ?? true)) {
-            return 'laravel';
+        $name[] = $this->table;
+
+        foreach ($compositeIndexes as $index) {
+            $name[] = $index;
         }
+
+        $name[] = 'index';
+
+        return strtolower(implode('_', $name));
     }
 
     /**
@@ -199,7 +243,7 @@ class Indexer
      * @param QueryExecuted $event
      * @return string
      */
-    public function replaceBindings($event): string
+    protected function replaceBindings($event): string
     {
         $sql = $event->sql;
 
@@ -255,5 +299,44 @@ class Indexer
         }
 
         return "<pre>\n" . $line . implode($line, $rows) . $line . "</pre>\n";
+    }
+
+    public function outputResults()
+    {
+        $output = '';
+
+        if ($this->queries) {
+            $output .= '<style>';
+            $output .= 'body,html { line-height:100% !important; background: #edf1f3 !important; }';
+            $output .= 'pre { color:#000 !important; padding:10px; !important; margin:0 !important; }';
+            $output .= '.indexer { width:100%; height:100%; position: fixed; background: #edf1f3; top:0; left:0; color:#000; padding:25px; z-index:999999999; margin:0 0 100px 0; overflow:auto; }';
+            $output .= '.indexer_section { background: #fff; margin:0 0 20px 0; border:1px solid #dae0e5; border-radius:5px; }';
+            $output .= '.indexer_section_details { padding:5px; font-size:.90rem; }';
+            $output .= '.left { float: left; }';
+            $output .= '.right { float: right; }';
+            $output .= '.clear { clear: both; }';
+            $output .= '</style>';
+
+            $output .= '<div class="indexer">';
+
+            foreach ($this->queries as $query) {
+
+                $bgColor = $query['possible_keys'] ? '#a2e5b1' : '#dae0e5';
+
+                $output .= '<div class="indexer_section">';
+                $output .= '<div class="indexer_section_details" style="background: ' . $bgColor . '">';
+                $output .= "<div class='left'>Index: $query[index_name]</div>";
+                $output .= "<div class='right'>Time: $query[time]</div>";
+                $output .= "<div class='clear'></div>";
+                $output .= '</div>';
+                $output .= SqlFormatter::highlight($query['sql']);
+                $output .= $this->table([array_slice($query, 0, -3)]);
+                $output .= '</div>';
+            }
+
+            $output .= '</div>';
+        }
+
+        echo $output;
     }
 }
