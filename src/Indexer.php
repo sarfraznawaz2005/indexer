@@ -1,6 +1,6 @@
 <?php
 
-namespace Sarfraznawaz2005\QueryWatch;
+namespace Sarfraznawaz2005\Indexer;
 
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Database\Schema\Blueprint;
@@ -8,10 +8,8 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
-use Sarfraznawaz2005\QueryWatch\Events\QueryDetected;
-use Symfony\Component\HttpFoundation\Response;
 
-class QueryWatch
+class Indexer
 {
     private $detectQueries = false;
 
@@ -231,44 +229,6 @@ class QueryWatch
     protected function formatBindings($event): array
     {
         return $event->connection->prepareBindings($event->bindings);
-    }
-
-    public function getDetectedQueries(): Collection
-    {
-        $queries = $this->queries->values();
-
-        if ($queries->isNotEmpty()) {
-            event(new QueryDetected($queries));
-        }
-
-        return $queries;
-    }
-
-    protected function getOutputTypes()
-    {
-        $outputTypes = config('querywatch.output');
-
-        if (!is_array($outputTypes)) {
-            $outputTypes = [$outputTypes];
-        }
-
-        return $outputTypes;
-    }
-
-    protected function applyOutput(Response $response)
-    {
-        foreach ($this->getOutputTypes() as $type) {
-            app($type)->output($this->getDetectedQueries(), $response);
-        }
-    }
-
-    public function output($request, $response)
-    {
-        if ($this->getDetectedQueries()->isNotEmpty()) {
-            $this->applyOutput($response);
-        }
-
-        return $response;
     }
 
     protected function table($data): string

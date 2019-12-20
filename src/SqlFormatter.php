@@ -1,6 +1,6 @@
 <?php
 
-namespace Sarfraznawaz2005\QueryWatch;
+namespace Sarfraznawaz2005\Indexer;
 
 
 /**
