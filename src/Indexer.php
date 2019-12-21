@@ -12,9 +12,12 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Sarfraznawaz2005\Indexer\Outputs\Web;
+use Sarfraznawaz2005\Indexer\Traits\FetchesStackTrace;
 
 class Indexer
 {
+    use FetchesStackTrace;
+
     protected $detectQueries = false;
 
     /** @var QueryExecuted */
@@ -23,6 +26,8 @@ class Indexer
     protected $table = '';
 
     protected $queries = [];
+
+    protected $source = [];
 
     protected $unremovedIndexes = [];
 
@@ -95,6 +100,7 @@ class Indexer
 
         $this->queryEvent = $event;
         $this->table = $this->getTableNameFromQuery();
+        $this->source = $this->getCallerFromStackTrace();
 
         if ($this->isSelectQuery()) {
             $this->disableDetection();
@@ -315,13 +321,15 @@ class Indexer
         $event = $this->queryEvent;
         $sql = $this->getSql();
 
-        $result = DB::select(DB::raw('EXPLAIN ' . $sql))[0];
+        $result = DB::select(DB::raw('EXPLAIN ' . $sql))[0] ?? null;
 
         if ($result) {
             $result = (array)$result;
             $result['sql'] = $sql;
             $result['time'] = number_format($event->time, 2);
             $result['index_name'] = $this->getLaravelIndexName($index);
+            $result['file'] = $this->source['file'];
+            $result['line'] = $this->source['line'];
 
             $this->queries[] = $result;
         }

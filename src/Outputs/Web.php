@@ -54,9 +54,11 @@ class Web implements Output
                 .indexer { width:100%; height:100%; position: fixed; background: #edf1f3; top:0; left:0; color:#000; padding:25px; z-index:999999999; margin:0; overflow:auto; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif !important; font-size:1rem !important; }
                 .indexer_section { background: #fff; margin:0 0 20px 0; border:1px solid #dae0e5; border-radius:5px; }
                 .indexer_section_details { padding:5px; font-size:.90rem; }
+                .indexer .sql pre { border-top: 1px solid #edf1f3; border-bottom: 1px solid #edf1f3; }
                 .indexer .left { float: left; }
                 .indexer .right { float: right; }
                 .indexer .clear { clear: both; }
+                .indexer .padded { padding:10px; font-size: .90rem; color:#555; }
                 .indexer .error { background:#ff6586; color:#fff; font-weight:bold; text-align:center; border:1px solid red; padding:10px; margin:10px 0;}
             </style>
 OUTOUT;
@@ -85,8 +87,12 @@ OUTOUT;
             $output .= "<div class='right'><strong>$query[time]</strong></div>";
             $output .= "<div class='clear'></div>";
             $output .= '</div>';
-            $output .= SqlFormatter::$queryFormatMethod($query['sql']);
-            $output .= $this->table([array_slice($query, 0, -3)]);
+            $output .= "<div class='padded'>";
+            $output .= "File: <strong>$query[file]</strong><br>";
+            $output .= "Line: <strong>$query[line]</strong>";
+            $output .= '</div>';
+            $output .= '<div class="sql">'.SqlFormatter::$queryFormatMethod($query['sql']) . '</div>';
+            $output .= $this->table([array_slice($query, 0, -5)]);
             $output .= '</div>';
         }
 
