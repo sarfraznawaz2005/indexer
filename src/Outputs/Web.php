@@ -53,7 +53,7 @@ class Web implements Output
                 .indexer pre { color:#000 !important; padding:10px; !important; margin:0 !important; }
                 .indexer { width:100%; height:100%; position: fixed; background: #edf1f3; top:0; left:0; color:#000; padding:25px; z-index:999999999; margin:0; overflow:auto; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif !important; font-size:1rem !important; }
                 .indexer_section { background: #fff; margin:0 0 20px 0; border:1px solid #dae0e5; border-radius:5px; }
-                .indexer_section_details { padding:5px; font-size:.90rem; }
+                .indexer_section_details { padding:10px; font-size:.90rem; }
                 .indexer .sql pre { border-top: 1px solid #edf1f3; border-bottom: 1px solid #edf1f3; }
                 .indexer .left { float: left; }
                 .indexer .right { float: right; }
