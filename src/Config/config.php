@@ -24,4 +24,17 @@ return [
         ],
         */
     ],
+
+    /*
+     * Format SQL queries.
+     */
+    'format_queries' => false,
+
+    /*
+     * Outputs results class.
+     */
+    'output_to' => [
+        // outputs results into current visited page.
+        Sarfraznawaz2005\Indexer\Outputs\Web::class,
+    ]
 ];
