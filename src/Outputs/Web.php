@@ -59,6 +59,7 @@ class Web implements Output
                 .indexer .right { float: right; }
                 .indexer .clear { clear: both; }
                 .indexer .padded { padding:10px; font-size: .90rem; color:#555; }
+                .indexer .hint { background: #a1ff8e; padding:2px 5px; border-radius: 5px; margin: 0 0 5px 0; display: inline-block; }
                 .indexer .error { background:#ff6586; color:#fff; font-weight:bold; text-align:center; border:1px solid red; padding:10px; margin:10px 0;}
             </style>
 OUTOUT;
@@ -91,8 +92,19 @@ OUTOUT;
             $output .= "File: <strong>$query[file]</strong><br>";
             $output .= "Line: <strong>$query[line]</strong>";
             $output .= '</div>';
-            $output .= '<div class="sql">'.SqlFormatter::$queryFormatMethod($query['sql']) . '</div>';
-            $output .= $this->table([array_slice($query, 0, -5)]);
+            $output .= '<div class="sql">' . SqlFormatter::$queryFormatMethod($query['sql']) . '</div>';
+            $output .= $this->table([array_slice($query, 0, -6)]);
+
+            if ($query['hints']) {
+                $output .= "<div class='padded'>";
+
+                foreach ($query['hints'] as $hint) {
+                    $output .= "<span class='hint'>Hint</span> <strong>$hint</strong><br>";
+                }
+
+                $output .= '</div>';
+            }
+
             $output .= '</div>';
         }
 
