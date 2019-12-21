@@ -451,8 +451,8 @@ OUTOUT;
 
             $output .= '<div class="indexer_section">';
             $output .= '<div class="indexer_section_details" style="background: ' . $bgColor . '">';
-            $output .= "<div class='left'>Index: <strong>$query[index_name]</strong></div>";
-            $output .= "<div class='right'>Time: <strong>$query[time]</strong></div>";
+            $output .= "<div class='left'><strong>$query[index_name]</strong></div>";
+            $output .= "<div class='right'><strong>$query[time]</strong></div>";
             $output .= "<div class='clear'></div>";
             $output .= '</div>';
             $output .= SqlFormatter::highlight($query['sql']);
