@@ -7,6 +7,7 @@ use Illuminate\Config\Repository;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -18,7 +19,7 @@ class Indexer
 {
     use FetchesStackTrace;
 
-    protected $detectQueries = false;
+    protected $detectQueries = true;
 
     /** @var QueryExecuted */
     protected $queryEvent;
@@ -29,21 +30,24 @@ class Indexer
 
     protected $source = [];
 
+    protected $skippedTables = [];
+
     protected $unremovedIndexes = [];
 
     /**
-     * Indexer constructor.
+     * Starts things up.
      */
-    public function __construct()
+    public function boot()
     {
-        if ($this->isEnabled() && $this->isDetecting()) {
+        if (!$this->isEnabled()) {
+            return false;
+        }
 
-            app()->events->listen(QueryExecuted::class, [$this, 'analyzeQuery']);
+        app()->events->listen(QueryExecuted::class, [$this, 'analyzeQuery']);
 
-            foreach ($this->getOutputTypes() as $outputType) {
-                app()->singleton($outputType);
-                app($outputType)->boot();
-            }
+        foreach ($this->getOutputTypes() as $outputType) {
+            app()->singleton($outputType);
+            app($outputType)->boot();
         }
     }
 
@@ -52,13 +56,7 @@ class Indexer
      */
     public function isEnabled(): bool
     {
-        $configEnabled = config('indexer.enabled', false);
-
-        if ($configEnabled) {
-            $this->detectQueries = true;
-        }
-
-        return $configEnabled;
+        return config('indexer.enabled', false);
     }
 
     /**
@@ -101,8 +99,9 @@ class Indexer
         $this->queryEvent = $event;
         $this->table = $this->getTableNameFromQuery();
         $this->source = $this->getCallerFromStackTrace();
+        //dump($this->table);
 
-        if ($this->isSelectQuery()) {
+        if ($this->isAllowedRequest() && $this->isSelectQuery()) {
             $this->disableDetection();
             $this->tryIndexes();
             $this->enableDetection();
@@ -149,8 +148,32 @@ class Indexer
     protected function getTableNameFromQuery(): string
     {
         $table = trim(str_ireplace(['from', '`'], '', stristr($this->getSql(), 'from')));
+        $table = strtok($table, ' ');
 
-        return strtok($table, ' ');
+        return preg_replace('/\v(?:[\v\h]+)/', '', $table);
+    }
+
+    /**
+     * Check if we are handling allowed request/page.
+     *
+     * @return bool
+     */
+    protected function isAllowedRequest(): bool
+    {
+        $ignoredPaths = array_merge([
+            '*indexer*',
+            '*meter*',
+            '*debugbar*',
+            '*_debugbar*',
+            '*clockwork*',
+            '*_clockwork*',
+            '*telescope*',
+            '*horizon*',
+            '*vendor/horizon*',
+            '*nova-api*',
+        ], config('indexer.ignore_paths', []));
+
+        return !app()->request->is($ignoredPaths);
     }
 
     /**
@@ -194,6 +217,8 @@ class Indexer
                 // make sure we have deleted added indexes
                 $this->unremovedIndexes = $this->checkAnyUnremovedIndexes($tableOriginalIndexes);
             }
+        } else {
+            $this->skippedTables[] = $table;
         }
     }
 
@@ -237,15 +262,23 @@ class Indexer
         $addedIndexes = [];
 
         foreach ($indexes as $index) {
+
+            $key = $this->makeKey($index);
+
+            // don't do anything if we have already checked this query
+            if (array_key_exists($key, $this->queries)) {
+                continue;
+            }
+
             if (!$this->indexExists($index)) {
                 $addedIndexes[] = $index;
 
                 $this->addIndex($index);
-                $this->explainQuery($index);
+                $this->explainQuery($index, true);
                 $this->removeIndex($index);
 
             } else {
-                $this->explainQuery($index);
+                $this->explainQuery($index, false);
             }
         }
 
@@ -290,9 +323,7 @@ class Indexer
 
         try {
             Schema::table($table, static function (Blueprint $table) use ($index) {
-
                 is_array($index) ? $table->dropIndex($index) : $table->dropIndex([$index]);
-
             });
         } catch (Exception $e) {
 
@@ -315,26 +346,44 @@ class Indexer
      * Collects EXPLAIN info and stores in queries var.
      *
      * @param $index
+     * @param $isIndexAlreadyPresentOnTable
      */
-    protected function explainQuery($index)
+    protected function explainQuery($index, $isIndexAlreadyPresentOnTable)
     {
+        $indexType = $isIndexAlreadyPresentOnTable ? 'Added By Indexer' : 'Already Present On Table';
+        $indexName = is_array($index) ? $this->getLaravelIndexName($index) : $index;
+        $indexName = "$indexName ($indexType)";
+
         $event = $this->queryEvent;
+
         $sql = $this->getSql();
         $hints = $this->performQueryAnalysis($sql);
 
         $result = DB::select(DB::raw('EXPLAIN ' . $sql))[0] ?? null;
 
         if ($result) {
-            $result = (array)$result;
-            $result['sql'] = $sql;
-            $result['time'] = number_format($event->time, 2);
-            $result['index_name'] = $this->getLaravelIndexName($index);
-            $result['file'] = $this->source['file'];
-            $result['line'] = $this->source['line'];
-            $result['hints'] = $hints;
+            $queryResult['explain_result'] = (array)$result;
+            $queryResult['sql'] = $sql;
+            $queryResult['time'] = number_format($event->time, 2) . 'ms';
+            $queryResult['index_name'] = $indexName;
+            $queryResult['file'] = $this->source['file'];
+            $queryResult['line'] = $this->source['line'];
+            $queryResult['hints'] = $hints;
+            $queryResult['skippedTables'] = $this->skippedTables;
 
-            $this->queries[] = $result;
+            $this->queries[$this->makeKey($indexName)] = $queryResult;
         }
+    }
+
+    /**
+     * Makes queries array keys so we don't analyze same query again.
+     *
+     * @param $indexName
+     * @return string
+     */
+    protected function makeKey($indexName): string
+    {
+        return md5($indexName . $this->getSql());
     }
 
     /**
@@ -462,28 +511,33 @@ class Indexer
     /**
      * Applies output.
      *
+     * @param Request $request
      * @param \Symfony\Component\HttpFoundation\Response $response
      */
-    protected function applyOutput(\Symfony\Component\HttpFoundation\Response $response)
+    protected function applyOutput(Request $request, \Symfony\Component\HttpFoundation\Response $response)
     {
         foreach ($this->getOutputTypes() as $type) {
-            app($type)->output($this->queries, $response);
+            app($type)->output($this->queries, $request, $response);
         }
     }
 
     /**
      * Outputs results.
      *
-     * @param Response $response
+     * @param Request $request
+     * @param $response
      * @return Response|void
      */
-    public function outputResults(Response $response)
+    public function outputResults(Request $request, $response)
     {
-        if (!$this->queries) {
+        // we don't modify json response
+        if ($request->expectsJson()) {
+            file_put_contents(storage_path('indexer.json'), json_encode($this->queries));
+
             return;
         }
 
-        $this->applyOutput($response);
+        $this->applyOutput($request, $response);
 
         return $response;
     }

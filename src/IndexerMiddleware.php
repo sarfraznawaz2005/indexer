@@ -4,7 +4,7 @@ namespace Sarfraznawaz2005\Indexer;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class IndexerMiddleware
 {
@@ -25,17 +25,38 @@ class IndexerMiddleware
      */
     public function handle($request, Closure $next)
     {
-        if (!$this->indexer->isEnabled()) {
-            return $next($request);
+        if ($this->canSendResponse($request, $next($request))) {
+            $this->indexer->boot();
+
+            $response = $next($request);
+
+            $this->indexer->outputResults($request, $response);
         }
 
-        app()->make(Indexer::class);
+        return $response ?? $next($request);
+    }
 
-        /** @var Response $response */
-        $response = $next($request);
+    /**
+     * See if we can add indexer results to response.
+     *
+     * @param Request $request
+     * @param $response
+     * @return bool
+     */
+    protected function canSendResponse(Request $request, $response): bool
+    {
+        if (!$this->indexer->isEnabled()) {
+            return false;
+        }
 
-        $this->indexer->outputResults($response);
+        if ($request->is('*indexer*')) {
+            return false;
+        }
 
-        return $response;
+        if ($response instanceof BinaryFileResponse) {
+            return false;
+        }
+
+        return true;
     }
 }

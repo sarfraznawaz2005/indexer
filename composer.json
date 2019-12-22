@@ -32,7 +32,10 @@
   "autoload": {
     "psr-4": {
       "Sarfraznawaz2005\\Actions\\": "src/"
-    }
+    },
+    "files": [
+      "src/Helpers.php"
+    ]
   },
   "extra": {
     "laravel": {

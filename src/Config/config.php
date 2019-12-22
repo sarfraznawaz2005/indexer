@@ -8,6 +8,12 @@ return [
     'enabled' => env('INDEXER_ENABLED', false),
 
     /*
+     * Specify whether to check queries in ajax requests.
+     */
+    'check_ajax_requests' => true,
+    'ajax_requests_polling_interval' => 30000, // in milli-seconds
+
+    /*
      * These tables will be watched by Indexer and specified indexes will be tested.
      */
     'watched_tables' => [
@@ -26,9 +32,14 @@ return [
     ],
 
     /*
-     * Format SQL queries.
+     * These paths/pages/patterns will NOT be handled by Indexer.
      */
-    'format_queries' => false,
+    'ignore_paths' => [
+        // foo
+        // foo*
+        // *foo
+        // *foo*
+    ],
 
     /*
      * Outputs results class.
