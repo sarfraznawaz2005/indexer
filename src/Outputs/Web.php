@@ -61,8 +61,10 @@ class Web implements Output
         $output .= <<< OUTOUT
             <style>
                  html { font-size: 1rem !important; }
-                .indexer_query_info, .indexer_query_info:active .indexer_query_info:visited .indexer_query_info:hover { background: #a1ff8e !important; position:fixed !important; z-index:2147483647 !important; bottom:20px !important; right:45px !important; padding: 2px 10px 5px 10px !important; font-size:20px !important; border-radius:5px !important;color:#333 !important; text-decoration: none !important; }
+                .indexer_query_info, .indexer_query_info:active .indexer_query_info:visited .indexer_query_info:hover { position:fixed !important; z-index:2147483647 !important; bottom:20px !important; right:45px !important; padding: 2px 10px 5px 10px !important; font-size:20px !important; border-radius:5px !important;color:#333 !important; text-decoration: none !important; }
                 .indexer_query_info .number { font-weight: bold !important; font-size: 24px !important; }
+                .indexer_alert { background: #a1ff8e !important; padding:2px 5px !important; border-radius: 5px !important; position:fixed !important; z-index:2147483647 !important; bottom:65px !important; right:45px !important;}
+                .indexer_small { font-size: .90rem !important;}
                 .indexer pre { background: #fff !important; color:#000 !important; padding:10px; !important; margin:0 !important; border: none !important; }
                 .indexer { width:100% !important; height:100% !important; position: fixed !important; background: #edf1f3 !important; top:0 !important; left:0 !important; color:#000 !important; padding:25px !important; z-index:999999999 !important; margin:0; overflow:auto; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif !important; font-size:1rem !important; line-height: 1rem !important; }
                 .indexer * { font-size:.75rem !important; }
@@ -78,16 +80,22 @@ class Web implements Output
             </style>
 OUTOUT;
 
+        $indexerColor = '#a1ff8e';
         $totalQueries = count($queries);
-        $optimizationsCount = 0;
+        $optimizationsCount = indexerGetOptimizedCount($queries);
 
-        foreach ($queries as $query) {
-            if (trim($query['explain_result']['key'])) {
-                $optimizationsCount++;
-            }
+        if (!$optimizationsCount || !config('indexer.watched_tables', [])) {
+            $indexerColor = '#fff382';
         }
 
-        $output .= '<a href="#" class="indexer_query_info">INDEXER <span class="number"><span class="indexer_opt">' . $optimizationsCount . '</span>/<span class="indexer_total">' . $totalQueries . '</span></span></a>';
+        // do we have any tables to watch
+        if (!config('indexer.watched_tables', [])) {
+            $output .= '<a href="#" class="indexer_query_info" style="background: ' . $indexerColor . ' !important;">INDEXER <span class="indexer_small">(No Tables Defined)</span></a>';
+        } else {
+            $output .= '<a href="#" class="indexer_query_info" style="background: ' . $indexerColor . ' !important;">INDEXER <span class="number"><span class="indexer_opt">' . $optimizationsCount . '</span>/<span class="indexer_total">' . $totalQueries . '</span></span></a>';
+        }
+
+        $output .= '<div class="indexer_alert" style="display: none;">New result(s) added from ajax request.</div>';
 
         $output .= '<div class="indexer" style="display: none;">';
 
@@ -143,9 +151,19 @@ OUTOUT;
                                 if (!alreadyAdded.includes(response.key)) {
                                     alreadyAdded.push(response.key);
                                     
+                                    if (response.counts.optimized > 0) {
+                                        document.querySelector(".indexer_query_info").style.background = "#a1ff8e";
+                                    }
+
                                     document.querySelector(".indexer_ajax_placeholder").innerHTML += response.content;
                                     document.querySelector(".indexer_total").innerHTML = (total + response.counts.total);
                                     document.querySelector(".indexer_opt").innerHTML = (optimized + response.counts.optimized);
+                                    
+                                    document.querySelector(".indexer_alert").style.display = "block";
+                                    
+                                    setTimeout(function() {
+                                        document.querySelector(".indexer_alert").style.display = "none";
+                                    }, 10000);
                                 }
                             }
                         });                  

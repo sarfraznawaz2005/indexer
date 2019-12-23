@@ -2,6 +2,28 @@
 
 use Sarfraznawaz2005\Indexer\SqlFormatter;
 
+if (!function_exists('indexerOptimizedKey')) {
+    function indexerOptimizedKey(array $query): string
+    {
+        return trim($query['explain_result']['key']);
+    }
+}
+
+if (!function_exists('indexerGetOptimizedCount')) {
+    function indexerGetOptimizedCount(array $queries): string
+    {
+        $optimizationsCount = 0;
+
+        foreach ($queries as $query) {
+            if (indexerOptimizedKey($query)) {
+                $optimizationsCount++;
+            }
+        }
+
+        return $optimizationsCount;
+    }
+}
+
 if (!function_exists('makeExplainResults')) {
     function makeExplainResults(array $queries): string
     {
@@ -9,7 +31,7 @@ if (!function_exists('makeExplainResults')) {
 
         foreach ($queries as $query) {
 
-            $bgColor = trim($query['explain_result']['key']) ? '#91e27f' : '#dae0e5';
+            $bgColor = indexerOptimizedKey($query) ? '#91e27f' : '#dae0e5';
 
             $output .= '<div class="indexer_section">';
             $output .= '<div class="indexer_section_details" style="background: ' . $bgColor . '">';

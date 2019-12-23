@@ -20,13 +20,7 @@ class IndexerController
                     $output .= makeExplainResults($queries);
 
                     $totalQueries = count($queries);
-                    $optimizationsCount = 0;
-
-                    foreach ($queries as $query) {
-                        if (trim($query['explain_result']['key'])) {
-                            $optimizationsCount++;
-                        }
-                    }
+                    $optimizationsCount = indexerGetOptimizedCount($queries);
 
                     return [
                         'key' => md5($output . $optimizationsCount . $totalQueries),
