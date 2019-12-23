@@ -208,7 +208,7 @@ class Indexer
                 $addedIndexesComposite = $this->applyIndexes($compositeIndexes);
 
             } catch (Exception $e) {
-                dump('Indexer Error: ' . $e->getMessage());
+                dump('Indexer Error: ' . $e->getLine() . ' - ' . $e->getMessage());
             } finally {
                 // just in case - again remove any custom added indexes
                 $this->removeUserDefinedIndexes($addedIndexes);
@@ -314,7 +314,6 @@ class Indexer
                 $table->index($index);
             });
         } catch (Exception $e) {
-            dump('Indexer Error: ' . $e->getMessage());
         }
     }
 
@@ -326,13 +325,16 @@ class Indexer
         $table = $this->table;
 
         try {
-            Schema::table($table, function (Blueprint $table) use ($index) {
-                @$table->dropIndex($this->getLaravelIndexName($index));
-
+            Schema::table($table, static function (Blueprint $table) use ($index) {
                 is_array($index) ? $table->dropIndex([$index]) : $table->dropIndex($index);
             });
         } catch (Exception $e) {
-            dump('Indexer Error: ' . $e->getMessage());
+            try {
+                Schema::table($table, function (Blueprint $table) use ($index) {
+                    $table->dropIndex($this->getLaravelIndexName($index));
+                });
+            } catch (Exception $e) {
+            }
         }
     }
 
