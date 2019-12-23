@@ -540,6 +540,7 @@ class Indexer
     {
         // we don't modify json response
         if ($request->expectsJson()) {
+            // todo: use database instead
             file_put_contents(storage_path('indexer.json'), json_encode($this->queries));
 
             return;
