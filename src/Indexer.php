@@ -326,7 +326,7 @@ class Indexer
         $table = $this->table;
 
         try {
-            Schema::table($table, static function (Blueprint $table) use ($index) {
+            Schema::table($table, function (Blueprint $table) use ($index) {
                 @$table->dropIndex($this->getLaravelIndexName($index));
 
                 is_array($index) ? $table->dropIndex([$index]) : $table->dropIndex($index);
