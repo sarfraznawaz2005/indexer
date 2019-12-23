@@ -1,39 +1,46 @@
-# Very short description of the package
+[![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](license.md)
+[![Latest Version on Packagist][ico-version]][link-packagist]
+[![Total Downloads][ico-downloads]][link-downloads]
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/sarfraznawaz2005/meter.svg?style=flat-square)](https://packagist.org/packages/sarfraznawaz2005/meter)
-[![Build Status](https://img.shields.io/travis/sarfraznawaz2005/meter/master.svg?style=flat-square)](https://travis-ci.org/sarfraznawaz2005/meter)
-[![Quality Score](https://img.shields.io/scrutinizer/g/sarfraznawaz2005/meter.svg?style=flat-square)](https://scrutinizer-ci.com/g/sarfraznawaz2005/meter)
-[![Total Downloads](https://img.shields.io/packagist/dt/sarfraznawaz2005/meter.svg?style=flat-square)](https://packagist.org/packages/sarfraznawaz2005/meter)
+# Laravel Indexer
 
-This is where your description should go. Try and limit it to a paragraph or two, and maybe throw in a mention of what PSRs you support to avoid any confusion with users and contributors.
+Laravel Indexer monitors `SELECT` queries running on a page and allows to add database indexes to `SELECT` queries on the fly. It then presents results of `EXPLAIN` or MySQL's execution plan right on the page.   The resutls presents by Indexer will help you see which index works best.
 
-## Installation
+This package is supposed to be run only in `local` environment so it won't run on any non-local environment.
 
-You can install the package via composer:
+> **CAUTION: PLEASE DO NOT USE THIS PACKAGE ON PRODUCTION!** 
+Since this package adds indexes to database on the fly, it is strongly recommended NOT to use this package in your production environment. 
 
-```bash
-composer require sarfraznawaz2005/meter
+> **Note** Since indexes are added and then removed dynamically to generate results, pages will load slow.
+
+
+## Requirements ##
+
+ - PHP >= 7
+ - Laravel 5.3+ | 6
+
+## Installation ##
+
+Install via composer
+
+```
+composer require sarfraznawaz2005/indexer
 ```
 
-## Usage
 
-``` php
-// Usage description here
-```
+That's it.
 
-### Testing
+---
 
-``` bash
-composer test
-```
+## Screenshot ##
 
-### Changelog
+## Config ##
 
-Please see [CHANGELOG](CHANGELOG.md) for more information what has changed recently.
+## How It Works ##
 
-## Contributing
+## Modes ##
 
-Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
+## Tips ##
 
 ### Security
 
@@ -41,13 +48,17 @@ If you discover any security related issues, please email sarfraznawaz2005@gmail
 
 ## Credits
 
-- [Sarfraz Ahmed](https://github.com/sarfraznawaz2005)
-- [All Contributors](../../contributors)
+- [Sarfraz Ahmed][link-author]
+- [All Contributors][link-contributors]
 
 ## License
 
-The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
+Please see the [license file](license.md) for more information.
 
-## Laravel Package Boilerplate
+[ico-version]: https://img.shields.io/packagist/v/sarfraznawaz2005/indexer.svg?style=flat-square
+[ico-downloads]: https://img.shields.io/packagist/dt/sarfraznawaz2005/indexer.svg?style=flat-square
 
-This package was generated using the [Laravel Package Boilerplate](https://laravelpackageboilerplate.com).
+[link-packagist]: https://packagist.org/packages/sarfraznawaz2005/indexer
+[link-downloads]: https://packagist.org/packages/sarfraznawaz2005/indexer
+[link-author]: https://github.com/sarfraznawaz2005
+[link-contributors]: https://github.com/sarfraznawaz2005/indexer/graphs/contributors
