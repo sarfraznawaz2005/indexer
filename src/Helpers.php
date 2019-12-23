@@ -9,7 +9,7 @@ if (!function_exists('makeExplainResults')) {
 
         foreach ($queries as $query) {
 
-            $bgColor = trim($query['explain_result']['key']) ? '#a2e5b1' : '#dae0e5';
+            $bgColor = trim($query['explain_result']['key']) ? '#91e27f' : '#dae0e5';
 
             $output .= '<div class="indexer_section">';
             $output .= '<div class="indexer_section_details" style="background: ' . $bgColor . '">';

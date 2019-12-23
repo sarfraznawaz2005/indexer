@@ -208,7 +208,7 @@ class Indexer
                 $addedIndexesComposite = $this->applyIndexes($compositeIndexes);
 
             } catch (Exception $e) {
-
+                dump('Indexer Error: ' . $e->getMessage());
             } finally {
                 // just in case - again remove any custom added indexes
                 $this->removeUserDefinedIndexes($addedIndexes);
@@ -274,11 +274,11 @@ class Indexer
                 $addedIndexes[] = $index;
 
                 $this->addIndex($index);
-                $this->explainQuery($index, true);
+                $this->explainQuery($index, false);
                 $this->removeIndex($index);
 
             } else {
-                $this->explainQuery($index, false);
+                $this->explainQuery($index, true);
             }
         }
 
@@ -295,6 +295,10 @@ class Indexer
 
         $indexes = collect(DB::select("SHOW INDEXES FROM $table"))->pluck('Key_name')->toArray();
 
+        if (!in_array($index, $indexes, true)) {
+            $index = $this->getLaravelIndexName($index);
+        }
+
         return in_array($index, $indexes, true);
     }
 
@@ -310,7 +314,7 @@ class Indexer
                 $table->index($index);
             });
         } catch (Exception $e) {
-
+            dump('Indexer Error: ' . $e->getMessage());
         }
     }
 
@@ -323,10 +327,12 @@ class Indexer
 
         try {
             Schema::table($table, static function (Blueprint $table) use ($index) {
-                is_array($index) ? $table->dropIndex($index) : $table->dropIndex([$index]);
+                @$table->dropIndex($this->getLaravelIndexName($index));
+
+                is_array($index) ? $table->dropIndex([$index]) : $table->dropIndex($index);
             });
         } catch (Exception $e) {
-
+            dump('Indexer Error: ' . $e->getMessage());
         }
     }
 
@@ -350,7 +356,7 @@ class Indexer
      */
     protected function explainQuery($index, $isIndexAlreadyPresentOnTable)
     {
-        $indexType = $isIndexAlreadyPresentOnTable ? 'Added By Indexer' : 'Already Present On Table';
+        $indexType = $isIndexAlreadyPresentOnTable ? 'Already Present On Table' : 'Added By Indexer';
         $indexName = is_array($index) ? $this->getLaravelIndexName($index) : $index;
         $indexName = "$indexName ($indexType)";
 
@@ -383,7 +389,7 @@ class Indexer
      */
     protected function makeKey($indexName): string
     {
-        return md5($indexName . $this->getSql());
+        return md5($this->getLaravelIndexName($indexName) . $this->getSql());
     }
 
     /**

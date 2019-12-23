@@ -61,7 +61,7 @@ class Web implements Output
         $output .= <<< OUTOUT
             <style>
                  html { font-size: 1rem !important; }
-                .indexer_query_info, .indexer_query_info:active .indexer_query_info:visited .indexer_query_info:hover { background: #a1ff8e !important; position:fixed !important; z-index:2147483647 !important; bottom:20px !important; right:45px !important; padding:5px 10px !important; font-size:20px !important; border-radius:5px !important;color:#333 !important; text-decoration: none !important; }
+                .indexer_query_info, .indexer_query_info:active .indexer_query_info:visited .indexer_query_info:hover { background: #a1ff8e !important; position:fixed !important; z-index:2147483647 !important; bottom:20px !important; right:45px !important; padding: 2px 10px 5px 10px !important; font-size:20px !important; border-radius:5px !important;color:#333 !important; text-decoration: none !important; }
                 .indexer_query_info .number { font-weight: bold !important; font-size: 24px !important; }
                 .indexer pre { background: #fff !important; color:#000 !important; padding:10px; !important; margin:0 !important; border: none !important; }
                 .indexer { width:100% !important; height:100% !important; position: fixed !important; background: #edf1f3 !important; top:0 !important; left:0 !important; color:#000 !important; padding:25px !important; z-index:999999999 !important; margin:0; overflow:auto; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif !important; font-size:1rem !important; line-height: 1rem !important; }
@@ -87,7 +87,7 @@ OUTOUT;
             }
         }
 
-        $output .= '<a href="#" class="indexer_query_info">INDEXER: <span class="number"><span class="indexer_opt">' . $optimizationsCount . '</span>/<span class="indexer_total">' . $totalQueries . '</span></span></a>';
+        $output .= '<a href="#" class="indexer_query_info">INDEXER <span class="number"><span class="indexer_opt">' . $optimizationsCount . '</span>/<span class="indexer_total">' . $totalQueries . '</span></span></a>';
 
         $output .= '<div class="indexer" style="display: none;">';
 
@@ -157,7 +157,7 @@ OUTOUT;
                     
                     xhr.open('GET', url);
                     xhr.onreadystatechange = function() {
-                        if (xhr.readyState>3 && xhr.status==200) callback(xhr.responseText);
+                        if (xhr.readyState > 3 && xhr.status === 200) callback(xhr.responseText);
                     };
                     
                     xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
