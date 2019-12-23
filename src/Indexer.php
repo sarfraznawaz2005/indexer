@@ -538,14 +538,6 @@ class Indexer
      */
     public function outputResults(Request $request, $response)
     {
-        // we don't modify json response
-        if ($request->expectsJson()) {
-            // todo: use database instead
-            file_put_contents(storage_path('indexer.json'), json_encode($this->queries));
-
-            return;
-        }
-
         $this->applyOutput($request, $response);
 
         return $response;

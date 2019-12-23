@@ -30,8 +30,16 @@ class Web implements Output
             return;
         }
 
-        $content = $response->getContent();
+        if ($request->ajax()) {
 
+            if ($queries && config('indexer.check_ajax_requests', false)) {
+                $response->headers->set('indexer_ajax_response', json_encode($queries));
+            }
+
+            return;
+        }
+
+        $content = $response->getContent();
         $pos = strripos($content, '</body>');
 
         $outputContent = $this->getOutputContent($queries);
@@ -70,7 +78,7 @@ class Web implements Output
                 .indexer * { font-size:.75rem !important; }
                 .indexer_section { background: #fff !important; margin:0 0 20px 0 !important; border:1px solid #dae0e5 !important; border-radius:5px !important; }
                 .indexer_section_details { padding:10px !important; font-size:.90rem !important; background: #dae0e5; }
-                .indexer .sql pre { border-top: 1px solid #edf1f3 !important; border-bottom: 1px solid #edf1f3 !important; }
+                .indexer .sql pre { border-top: 1px solid #edf1f3 !important; border-bottom: 1px solid #edf1f3 !important; color:darkblue !important; }
                 .indexer .left { float: left !important; }
                 .indexer .right { float: right !important; }
                 .indexer .clear { clear: both !important; }
@@ -117,7 +125,6 @@ OUTOUT;
         $output .= '<div style="margin:0 0 75px 0 !important;"></div>';
         $output .= '</div>';
 
-
         $output .= <<< OUTOUT
         <script>
             // toggle indexer results page
@@ -126,67 +133,138 @@ OUTOUT;
                 e.preventDefault();
                 
                 indexer.style.display = indexer.style.display === "none" ? "block" : "none";
-            });
+            });          
         </script>
 OUTOUT;
 
         if (config('indexer.check_ajax_requests', false)) {
-            $ajaxRequestUrl = route('indexer_get_ajax_request_results');
-            $ajaxPollingInterval = config('indexer.ajax_requests_polling_interval', 15000);
-
             $output .= <<< OUTOUT
-            <script>            
-                // see if we have new entries found in ajax requests
-                document.addEventListener('DOMContentLoaded', function() {
-                    var alreadyAdded = [];
-                    
-                    setInterval(function() {
-                        indexerAjaxGet('$ajaxRequestUrl', function(response){
-                            if (response) {
+            
+            <script>
+            // intercept ajax requests to see if Indexer detected any queries
+            (function (XHR) {
+                "use strict";
+    
+                var open = XHR.prototype.open;
+                var send = XHR.prototype.send;
+    
+                XHR.prototype.open = function (method, url, async, user, pass) {
+                    this._url = url;
+                    open.call(this, method, url, async, user, pass);
+                };
+    
+                XHR.prototype.send = function (data) {
+                    var self = this;
+                    var oldOnReadyStateChange;
+                    var url = this._url;
+    
+                    function onReadyStateChange() {
+                        if (self.readyState === 4) {
+                            var headers = parseResponseHeaders(this.getAllResponseHeaders()).indexer_ajax_response;
+                            
+                            if (typeof headers !== 'undefined') {
                                 var total = parseInt(document.querySelector(".indexer_total").innerHTML, 10);
                                 var optimized = parseInt(document.querySelector(".indexer_opt").innerHTML, 10);
+                                var alreadyAdded = [];
+                                var queries = JSON.parse(headers);
+                                var output = '<div class="padded"><strong>Added from Ajax Request(s):</strong></div>';
                                 
-                                response = JSON.parse(response);
-                                
-                                if (!alreadyAdded.includes(response.key)) {
-                                    alreadyAdded.push(response.key);
-                                    
-                                    if (response.counts.optimized > 0) {
-                                        document.querySelector(".indexer_query_info").style.background = "#a1ff8e";
-                                    }
+                                for(var x in queries) {
+                                    if (queries.hasOwnProperty(x)) {
+                                        
+                                        if (!alreadyAdded.includes(x)) {
+                                            alreadyAdded.push(x);
+                                            
+                                            var bgColor = queries[x]['explain_result']['key'] && queries[x]['explain_result']['key'].trim() ? '#91e27f' : '#dae0e5';
+                                            
+                                            var table = "[" + JSON.stringify(Object.keys(queries[x]['explain_result']));
+                                            table += ",[" + Object.keys(queries[x]['explain_result']).map(function(key) {
+                                              return '"' + (queries[x]['explain_result'][key] || ' ') + '"';
+                                            }) + "]]";                                            
+                                            console.log(table);
+                                            
+                                            output += '<div class="indexer_section">';
+                                            output += '<div class="indexer_section_details" style="background: ' + bgColor + '">';
+                                            output += "<div class='left'><strong>" + queries[x]['index_name'] + "</strong></div>";
+                                            output += "<div class='right'><strong>" + queries[x]['time'] + "</strong></div>";
+                                            output += "<div class='clear'></div>";
+                                            output += '</div>';
+                                            output += "<div class='padded'>";
+                                            output += "File: <strong>" + queries[x]['file'] + "</strong><br>";
+                                            output += "Line: <strong>" + queries[x]['line'] + "</strong>";
+                                            output += '</div>';
+                                            output += '<div class="sql"><pre>' + queries[x]['sql'] + '</pre></div>';
+                                            output += '<div class="sql"><pre>' + asciiTable(table) + '</pre></div>';
+                                            
+                                            //if (response.counts.optimized > 0) {
+                                                //document.querySelector(".indexer_query_info").style.background = "#a1ff8e";
+                                            //}
+                                            
+                                            document.querySelector(".indexer_ajax_placeholder").innerHTML += output;
+                                            //document.querySelector(".indexer_total").innerHTML = (total + response.counts.total);
+                                            //document.querySelector(".indexer_opt").innerHTML = (optimized + response.counts.optimized);
+                                            
+                                            document.querySelector(".indexer_alert").style.display = "block";
+                                            
+                                            setTimeout(function() {
+                                                document.querySelector(".indexer_alert").style.display = "none";
+                                            }, 10000);
 
-                                    document.querySelector(".indexer_ajax_placeholder").innerHTML += response.content;
-                                    document.querySelector(".indexer_total").innerHTML = (total + response.counts.total);
-                                    document.querySelector(".indexer_opt").innerHTML = (optimized + response.counts.optimized);
-                                    
-                                    document.querySelector(".indexer_alert").style.display = "block";
-                                    
-                                    setTimeout(function() {
-                                        document.querySelector(".indexer_alert").style.display = "none";
-                                    }, 10000);
+                                        }
+                                    }
                                 }
                             }
-                        });                  
-                    }, $ajaxPollingInterval);
-                });   
+                        }
+    
+                        if (oldOnReadyStateChange) {
+                            oldOnReadyStateChange();
+                        }
+                    }
+    
+                    /* Set xhr.noIntercept to true to disable the interceptor for a particular call */
+                    if (!this.noIntercept) {
+                        if (this.addEventListener) {
+                            this.addEventListener("readystatechange", onReadyStateChange, false);
+                        } else {
+                            oldOnReadyStateChange = this.onreadystatechange;
+                            this.onreadystatechange = onReadyStateChange;
+                        }
+                    }
+    
+                    send.call(this, data);
+                };
                 
-                function indexerAjaxGet(url, callback) {
-                    var xhr = window.XMLHttpRequest ? new XMLHttpRequest() : new ActiveXObject('Microsoft.XMLHTTP');
-                    
-                    xhr.open('GET', url);
-                    xhr.onreadystatechange = function() {
-                        if (xhr.readyState > 3 && xhr.status === 200) callback(xhr.responseText);
-                    };
-                    
-                    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-                    xhr.send();
-                    
-                    return xhr;
-                }            
+                // https://codegolf.stackexchange.com/questions/69560/display-2d-array-as-ascii-table
+                function parseResponseHeaders(headerStr) {
+                    return Object.fromEntries(
+                        (headerStr || '').split('\\u000d\\u000a')
+                            .map(line => line.split('\\u003a\\u0020'))
+                            .filter(pair => pair[0] !== undefined && pair[1] !== undefined)
+                    );
+                }
                 
-            </script>
-OUTOUT;
+                function asciiTable(data) {
+                  J=(m,j)=>j+m.join(j)+j,
+                  a.map(r=>r.map((c,i)=>s[i]>(l=c.length)?0:s[i]=l),s=[]),
+                  t=J(s.map(n=>'-'.repeat(n+2)),'+'),
+                  z=a.map(r=>J(r.map((c,i)=>' '+c+' '.repeat(s[i]+1-c.length)),'|')),
+                  z[0]+='\\n'+t,
+                  t+J(z,'\\n')+t  
+                }                
 
+                if (!String.prototype.trim) {
+                    (function() {
+                        // Make sure we trim BOM and NBSP
+                        var rtrim = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;
+                        String.prototype.trim = function() {
+                            return this.replace(rtrim, '');
+                        };
+                    })();
+                }
+                
+            })(XMLHttpRequest);
+        </script>
+OUTOUT;
         }
 
         $output .= '<!--end_indexer_response-->';

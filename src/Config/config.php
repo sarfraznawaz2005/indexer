@@ -11,7 +11,6 @@ return [
      * Specify whether to check queries in ajax requests.
      */
     'check_ajax_requests' => true,
-    'ajax_requests_polling_interval' => 30000, // in milli-seconds
 
     /*
      * These tables will be watched by Indexer and specified indexes will be tested.

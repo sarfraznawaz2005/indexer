@@ -1,7 +1,5 @@
 <?php
 
-use Sarfraznawaz2005\Indexer\SqlFormatter;
-
 if (!function_exists('indexerOptimizedKey')) {
     function indexerOptimizedKey(array $query): string
     {
@@ -43,7 +41,7 @@ if (!function_exists('makeExplainResults')) {
             $output .= "File: <strong>$query[file]</strong><br>";
             $output .= "Line: <strong>$query[line]</strong>";
             $output .= '</div>';
-            $output .= '<div class="sql">' . SqlFormatter::highlight($query['sql']) . '</div>';
+            $output .= '<div class="sql"><pre>' . $query['sql'] . '</pre></div>';
             $output .= explainToTable([$query['explain_result']]);
 
             if ($query['hints']) {

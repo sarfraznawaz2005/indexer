@@ -3,7 +3,6 @@
 namespace Sarfraznawaz2005\Indexer;
 
 use Illuminate\Contracts\Http\Kernel;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider as BaseServiceProvider;
 
 class ServiceProvider extends BaseServiceProvider
@@ -15,13 +14,6 @@ class ServiceProvider extends BaseServiceProvider
                 __DIR__ . '/Config/config.php' => config_path('indexer.php'),
             ], 'config');
         }
-
-        Route::group([
-            'namespace' => 'Sarfraznawaz2005\Indexer\Http\Controllers',
-            'prefix' => 'indexer'
-        ], function () {
-            $this->loadRoutesFrom(__DIR__ . '/Http/routes.php');
-        });
 
         $this->registerMiddleware(IndexerMiddleware::class);
     }
