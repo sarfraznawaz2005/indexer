@@ -95,7 +95,7 @@ In this mode, you can actually see which indexes work best without actually appl
 
 **Already Present Indexes + Indexes Added By Indexer**
 
-You might have some indexes already present on your tables but you want to try out more via `try_indexes` and/or `try_composite_indexes` options. To specify table's existing indexes, use `try_table_indexes` option as mentioned earlier. Table's existing indexes (specified in `try_table_indexes`) will remain intact but indexes added via `try_indexes` and `try_composite_indexes` will be automatically removed.
+You might have some indexes already present on your tables but you want to try out more indexes on the fly without actually adding to the table via `try_indexes` and/or `try_composite_indexes` options. To specify table's existing indexes, use `try_table_indexes` option as mentioned earlier. Table's existing indexes (specified in `try_table_indexes`) will remain intact but indexes added via `try_indexes` and `try_composite_indexes` will be automatically removed.
 
 **Already Present Indexes**
 
@@ -108,9 +108,11 @@ When you don't want Indexer to add any indexes on the fly and you have already s
     ],
     'posts' => [
         'try_table_indexes' => ['title'],
-    ],    
+    ]
 ],
 ````
+
+In this case, both `email` and `title` indexes are supposed to be already added to table manually.
 
 ## Misc ##
 
