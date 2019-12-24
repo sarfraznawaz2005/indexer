@@ -106,7 +106,7 @@ OUTOUT;
             $output .= '<a href="#" class="indexer_query_info" style="background: ' . $indexerColor . ' !important;">INDEXER <span class="number"><span class="indexer_opt">' . $optimizationsCount . '</span>/<span class="indexer_total">' . $totalQueries . '</span></span></a>';
         }
 
-        $output .= '<div class="indexer_alert" style="display: none;">New result(s) added from ajax request.</div>';
+        $output .= '<div class="indexer_alert" style="display: none;"></div>';
 
         $output .= '<div class="indexer" style="display: none;">';
 
@@ -170,6 +170,7 @@ OUTOUT;
                             if (headers) {                                
                                 var output = '<div class="padded"><strong>Added from Ajax Request</strong></div>';                        
                                 var count = 0;
+                                var optimizedCount = 0;
 
                                 var queries = JSON.parse(headers);
 
@@ -215,10 +216,12 @@ OUTOUT;
                                             document.querySelector(".indexer_total").innerHTML = (total + count);
                                             
                                             if (hasOptimized) {
+												optimizedCount++;
                                                 document.querySelector(".indexer_query_info").style.background = '#a1ff8e';
-                                                document.querySelector(".indexer_opt").innerHTML = (optimized + 1);   
+                                                document.querySelector(".indexer_opt").innerHTML = (optimized + optimizedCount);   
                                             }
                                             
+                                            document.querySelector(".indexer_alert").innerHTML = ((total + count) - count) + " new result(s) added from ajax request.";
                                             document.querySelector(".indexer_alert").style.display = "block";
 
                                             setTimeout(function() {
