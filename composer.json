@@ -31,7 +31,7 @@
   },
   "autoload": {
     "psr-4": {
-      "Sarfraznawaz2005\\Actions\\": "src/"
+      "Sarfraznawaz2005\\Indexer\\": "src/"
     },
     "files": [
       "src/Helpers.php"
@@ -43,6 +43,5 @@
         "Sarfraznawaz2005\\Indexer\\ServiceProvider"
       ]
     }
-  },
-  "minimum-stability": "stable"
+  }
 }
