@@ -22,8 +22,8 @@ if (!function_exists('indexerGetOptimizedCount')) {
     }
 }
 
-if (!function_exists('makeExplainResults')) {
-    function makeExplainResults(array $queries): string
+if (!function_exists('indexerMakeExplainResults')) {
+    function indexerMakeExplainResults(array $queries): string
     {
         $output = '';
 
@@ -41,8 +41,8 @@ if (!function_exists('makeExplainResults')) {
             $output .= "File: <strong>$query[file]</strong><br>";
             $output .= "Line: <strong>$query[line]</strong>";
             $output .= '</div>';
-            $output .= '<div class="sql"><pre>' . $query['sql'] . '</pre></div>';
-            $output .= explainToTable([$query['explain_result']]);
+            $output .= '<div class="sql">' . $query['sql'] . '</div>';
+            $output .= indexerTable([$query['explain_result']]);
 
             if ($query['hints']) {
                 $output .= "<div class='padded'>";
@@ -61,31 +61,32 @@ if (!function_exists('makeExplainResults')) {
     }
 }
 
-if (!function_exists('explainToTable')) {
-    function explainToTable($data): string
+if (!function_exists('indexerTable')) {
+    function indexerTable($array, $table = true): string
     {
-        $keys = array_keys(end($data));
-        $size = array_map('strlen', $keys);
+        $out = '';
 
-        foreach (array_map('array_values', $data) as $e) {
-            $size = array_map('max', $size,
-                array_map('strlen', $e));
+        foreach ($array as $key => $value) {
+            if (is_array($value)) {
+                if (!isset($tableHeader)) {
+                    $tableHeader = '<th>' . implode('</th><th>', array_keys($value)) . '</th>';
+                }
+
+                array_keys($value);
+
+                $out .= '<tr>';
+                $out .= indexerTable($value, false);
+                $out .= '</tr>';
+            } else {
+                $out .= "<td>$value</td>";
+            }
         }
 
-        foreach ($size as $n) {
-            $form[] = "%-{$n}s";
-            $line[] = str_repeat('-', $n);
+        if ($table) {
+            return '<table class="indexer_table">' . $tableHeader . $out . '</table>';
         }
 
-        $form = '| ' . implode(' | ', $form) . " |\n";
-        $line = '+-' . implode('-+-', $line) . "-+\n";
-        $rows = array(vsprintf($form, $keys));
-
-        foreach ($data as $e) {
-            $rows[] = vsprintf($form, $e);
-        }
-
-        return "<pre>\n" . $line . implode($line, $rows) . $line . "</pre>\n";
+        return $out;
     }
 }
 

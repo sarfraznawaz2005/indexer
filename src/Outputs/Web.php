@@ -78,13 +78,16 @@ class Web implements Output
                 .indexer * { font-size:.75rem !important; }
                 .indexer_section { background: #fff !important; margin:0 0 20px 0 !important; border:1px solid #dae0e5 !important; border-radius:5px !important; }
                 .indexer_section_details { padding:10px !important; font-size:.90rem !important; background: #dae0e5; }
-                .indexer .sql pre { border-top: 1px solid #edf1f3 !important; border-bottom: 1px solid #edf1f3 !important; color:darkblue !important; }
+                .indexer .sql { border-top: 1px solid #edf1f3 !important; border-bottom: 1px solid #edf1f3 !important; color:#666; !important; padding: 10px 15px !important; font-weight: bold !important; background: #f4f6f7 !important; }
                 .indexer .left { float: left !important; }
                 .indexer .right { float: right !important; }
                 .indexer .clear { clear: both !important; }
                 .indexer .padded { padding:10px !important; font-size: .90rem !important; color:#555 !important; }
                 .indexer .hint { background: #a1ff8e !important; padding:2px 5px !important; border-radius: 5px !important; margin: 0 0 5px 0 !important; display: inline-block !important; font-weight: bold !important; }
                 .indexer .error { background:#ff6586 !important; color:#fff !important; font-weight:bold !important; text-align:center !important; border:1px solid red !important; padding:10px !important; margin:10px 0 !important;}
+                .indexer .indexer_table * { background:#fff !important;}
+                .indexer .indexer_table { border-collapse: collapse !important; width: 98% !important; margin: 20px auto !important;}
+                .indexer .indexer_table td, .indexer .indexer_table th { padding: 3px !important; font-weight: normal !important; text-align: center !important; border: 1px solid #dae0e5; word-wrap: break-word !important;}
             </style>
 OUTOUT;
 
@@ -107,7 +110,7 @@ OUTOUT;
 
         $output .= '<div class="indexer" style="display: none;">';
 
-        $output .= makeExplainResults($queries);
+        $output .= indexerMakeExplainResults($queries);
 
         $output .= '<div class="indexer_ajax_placeholder"></div>';
 
@@ -147,6 +150,8 @@ OUTOUT;
     
                 var open = XHR.prototype.open;
                 var send = XHR.prototype.send;
+                
+                var alreadyAdded = [];
     
                 XHR.prototype.open = function (method, url, async, user, pass) {
                     this._url = url;
@@ -160,29 +165,27 @@ OUTOUT;
     
                     function onReadyStateChange() {
                         if (self.readyState === 4) {
-                            var headers = parseResponseHeaders(this.getAllResponseHeaders()).indexer_ajax_response;
+                            var headers = parseResponseHeaders(this.getAllResponseHeaders()).indexer_ajax_response || null;
                             
-                            if (typeof headers !== 'undefined') {
-                                var total = parseInt(document.querySelector(".indexer_total").innerHTML, 10);
-                                var optimized = parseInt(document.querySelector(".indexer_opt").innerHTML, 10);
-                                var alreadyAdded = [];
+                            if (headers) {                                
+                                var output = '<div class="padded"><strong>Added from Ajax Request</strong></div>';                        
+                                var count = 0;
+
                                 var queries = JSON.parse(headers);
-                                var output = '<div class="padded"><strong>Added from Ajax Request(s):</strong></div>';
-                                
+
                                 for(var x in queries) {
                                     if (queries.hasOwnProperty(x)) {
-                                        
+                                        count++;
+
+                                        var total = parseInt(document.querySelector(".indexer_total").innerHTML, 10);
+                                        var optimized = parseInt(document.querySelector(".indexer_opt").innerHTML, 10);
+
                                         if (!alreadyAdded.includes(x)) {
                                             alreadyAdded.push(x);
-                                            
-                                            var bgColor = queries[x]['explain_result']['key'] && queries[x]['explain_result']['key'].trim() ? '#91e27f' : '#dae0e5';
-                                            
-                                            var table = "[" + JSON.stringify(Object.keys(queries[x]['explain_result']));
-                                            table += ",[" + Object.keys(queries[x]['explain_result']).map(function(key) {
-                                              return '"' + (queries[x]['explain_result'][key] || ' ') + '"';
-                                            }) + "]]";                                            
-                                            console.log(table);
-                                            
+
+                                            var hasOptimized = queries[x]['explain_result']['key'] && queries[x]['explain_result']['key'].trim();
+                                            var bgColor = hasOptimized ? '#91e27f' : '#dae0e5';
+
                                             output += '<div class="indexer_section">';
                                             output += '<div class="indexer_section_details" style="background: ' + bgColor + '">';
                                             output += "<div class='left'><strong>" + queries[x]['index_name'] + "</strong></div>";
@@ -193,19 +196,31 @@ OUTOUT;
                                             output += "File: <strong>" + queries[x]['file'] + "</strong><br>";
                                             output += "Line: <strong>" + queries[x]['line'] + "</strong>";
                                             output += '</div>';
-                                            output += '<div class="sql"><pre>' + queries[x]['sql'] + '</pre></div>';
-                                            output += '<div class="sql"><pre>' + asciiTable(table) + '</pre></div>';
-                                            
-                                            //if (response.counts.optimized > 0) {
-                                                //document.querySelector(".indexer_query_info").style.background = "#a1ff8e";
-                                            //}
+                                            output += '<div class="sql">' + queries[x]['sql'] + '</div>';
+                                            output += indexerTable(queries[x]['explain_result']);
+
+                                            if (queries[x]['hints']) {
+                                                output += "<div class='padded'>";
+
+                                                queries[x]['hints'].forEach(function(item) {
+                                                    output += "<span class='hint'>Hint</span> <strong>" + item + "</strong><br>";
+                                                });
+
+                                                output += '</div>';
+                                            }
+
+                                            output += '</div>';
                                             
                                             document.querySelector(".indexer_ajax_placeholder").innerHTML += output;
-                                            //document.querySelector(".indexer_total").innerHTML = (total + response.counts.total);
-                                            //document.querySelector(".indexer_opt").innerHTML = (optimized + response.counts.optimized);
+                                            document.querySelector(".indexer_total").innerHTML = (total + count);
+                                            
+                                            if (hasOptimized) {
+                                                document.querySelector(".indexer_query_info").style.background = '#a1ff8e';
+                                                document.querySelector(".indexer_opt").innerHTML = (optimized + 1);   
+                                            }
                                             
                                             document.querySelector(".indexer_alert").style.display = "block";
-                                            
+
                                             setTimeout(function() {
                                                 document.querySelector(".indexer_alert").style.display = "none";
                                             }, 10000);
@@ -215,7 +230,7 @@ OUTOUT;
                                 }
                             }
                         }
-    
+
                         if (oldOnReadyStateChange) {
                             oldOnReadyStateChange();
                         }
@@ -234,7 +249,6 @@ OUTOUT;
                     send.call(this, data);
                 };
                 
-                // https://codegolf.stackexchange.com/questions/69560/display-2d-array-as-ascii-table
                 function parseResponseHeaders(headerStr) {
                     return Object.fromEntries(
                         (headerStr || '').split('\\u000d\\u000a')
@@ -243,18 +257,28 @@ OUTOUT;
                     );
                 }
                 
-                function asciiTable(data) {
-                  J=(m,j)=>j+m.join(j)+j,
-                  a.map(r=>r.map((c,i)=>s[i]>(l=c.length)?0:s[i]=l),s=[]),
-                  t=J(s.map(n=>'-'.repeat(n+2)),'+'),
-                  z=a.map(r=>J(r.map((c,i)=>' '+c+' '.repeat(s[i]+1-c.length)),'|')),
-                  z[0]+='\\n'+t,
-                  t+J(z,'\\n')+t  
+                function indexerTable(obj) {
+                    var html = '<table class="indexer_table">';
+                    
+                    html += '<tr>';
+                    Object.keys(obj).forEach(function (item, index) {
+                      html += '<th>' + item + '</th>';
+                    });
+                    html += '</tr>';
+                    
+                    html += '<tr>';
+                    Object.values(obj).forEach(function (item, index) {
+                      html += '<td>' + (item || '') + '</td>';
+                    });
+                    html += '</tr>';
+                    
+                    html += '</table>';
+                    
+                    return html;
                 }                
 
                 if (!String.prototype.trim) {
                     (function() {
-                        // Make sure we trim BOM and NBSP
                         var rtrim = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;
                         String.prototype.trim = function() {
                             return this.replace(rtrim, '');

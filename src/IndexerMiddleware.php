@@ -49,10 +49,6 @@ class IndexerMiddleware
             return false;
         }
 
-        if (app()->environment() !== 'local') {
-            return false;
-        }
-
         if (!$request->isMethod('get')) {
             return false;
         }
