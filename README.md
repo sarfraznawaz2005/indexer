@@ -13,7 +13,6 @@ Since this package adds indexes to database on the fly, it is strongly recommend
 
 > **Note** Since indexes are added and then removed dynamically to generate results, pages will load slow.
 
-
 ## Requirements ##
 
  - PHP >= 7
