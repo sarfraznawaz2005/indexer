@@ -31,7 +31,7 @@ return [
     ],
 
     /*
-     * These paths/pages/patterns will NOT be handled by Indexer.
+     * These paths/patterns will NOT be handled by Indexer.
      */
     'ignore_paths' => [
         // foo

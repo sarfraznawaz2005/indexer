@@ -4,9 +4,9 @@
 
 # Laravel Indexer
 
-Laravel Indexer monitors `SELECT` queries running on a page and allows to add database indexes to `SELECT` queries on the fly. It then presents results of `EXPLAIN` or MySQL's execution plan right on the page.   The resutls presents by Indexer will help you see which index works best.
+Laravel Indexer monitors `SELECT` queries running on a page and allows to add database indexes to `SELECT` queries on the fly. It then presents results of `EXPLAIN` or MySQL's execution plan right on the page. The results presents by Indexer will help you see which indexes work best for different queries running on a page. 
 
-This package is supposed to be run only in `local` environment so it won't run on any non-local environment.
+Indexes *added by Indexer* are automatically removed after results are collected while keeping your existing indexes intact.
 
 > **CAUTION: PLEASE DO NOT USE THIS PACKAGE ON PRODUCTION!** 
 Since this package adds indexes to database on the fly, it is strongly recommended NOT to use this package in your production environment. 
@@ -27,20 +27,94 @@ Install via composer
 composer require sarfraznawaz2005/indexer
 ```
 
+For Laravel < 5.5:
 
-That's it.
+Add Service Provider to `config/app.php` in `providers` section
+```php
+Sarfraznawaz2005\Indexer\ServiceProvider::class,
+```
+
+---
+
+Publish package's config file by running below command:
+
+```bash
+$ php artisan vendor:publish --provider="Sarfraznawaz2005\Indexer\ServiceProvider"
+```
+It should publish `config/indexer.php` config file.
 
 ---
 
 ## Screenshot ##
 
+When enabled, you will see yellow/green box on bottom right. Click it to toggle results. Box will turn green if it finds there is `key` present in any of queries' execution plan.
+
+![Main Window](https://github.com/sarfraznawaz2005/indexer/blob/master/screenshot.jpg?raw=true)
+
 ## Config ##
 
-## How It Works ##
+`enabled` : Enable or disable Indexer. By default it is disabled.
+
+`check_ajax_requests` : Specify whether to check queries in ajax requests.
+
+`ignore_paths` : These paths/patterns will NOT be handled by Indexer.
+
+`output_to` : Outputs results to given classes. By default `Web` class is included.
+
+`watched_tables` : DB tables to be watched by Indexer. Here is example:
+
+````php
+'watched_tables' => [
+    'users' => [
+        // list of already existing indexes to try
+        'try_table_indexes' => ['email'],
+        // new indexes indexes to try
+        'try_indexes' => ['name'],
+        // new composite indexes to try
+        'try_composite_indexes' => [
+            ['name', 'email'],
+        ],
+    ],
+],
+````
+
+ - Here queries involving `users` DB table will be watched by Indexer.
+     - `try_table_indexes` contains index names that you have already applied to your DB table. Indexer will simply try out your existing indexes to show `EXPLAIN` results. In this case, `email` index already exists in `users` table.
+     - `try_indexes` can be used to add new indexes on the fly to DB table. In this case, `name` index will be added on the fly by Indexer and results will be shown of how that index performed.
+     - Like `try_indexes` the `try_composite_indexes` can also be used to add composite indexes on the fly to DB table. In this case, composite index consisting of `name` and `email` will be added on the fly by Indexer and results will be shown of how that index performed.
 
 ## Modes ##
 
-## Tips ##
+Indexer can be used in following ways:
+
+**All Indexes Added By Indexer**
+
+Don't put any indexes manually on your tables instead let Indexer add indexes on the fly via `try_indexes` and/or `try_composite_indexes` options. Indexes added via these two options are automatically removed.
+
+In this mode, you can actually see which indexes work best without actually applying on your tables. You can skip using `try_table_indexes` option in this case.
+
+**Already Present Indexes + Indexes Added By Indexer**
+
+You might have some indexes already present on your tables but you want to try out more via `try_indexes` and/or `try_composite_indexes` options. To specify table's existing indexes, use `try_table_indexes` option as mentioned earlier. Table's existing indexes (specified in `try_table_indexes`) will remain intact but indexes added via `try_indexes` and `try_composite_indexes` will be automatically removed.
+
+**Already Present Indexes**
+
+When you don't want Indexer to add any indexes on the fly and you have already specified indexes on your tables and you just want to see `EXPLAIN` results for different queries running on a page for your indexes, in this case simply use `try_table_indexes` option only. Example:
+
+````php
+'watched_tables' => [
+    'users' => [
+        'try_table_indexes' => ['email'],
+    ],
+    'posts' => [
+        'try_table_indexes' => ['title'],
+    ],    
+],
+````
+
+## Misc ##
+
+ - Color of Indexer box on top right or query results changes to green if it finds query's `EXPLAIN` result has `key` present eg query actually used a key. This can be changed by overwriting function `indexerOptimizedKey` which is present in file `src/Helpers.php`.
 
 ### Security
 
