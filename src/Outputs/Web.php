@@ -14,7 +14,7 @@ class Web implements Output
 
     public function output(array $queries, Request $request, Response $response)
     {
-        if ($response->isRedirection() || stripos($response->headers->get('Content-Type'), 'text/html') !== 0) {
+        if (stripos($response->headers->get('Content-Type'), 'text/html') !== 0) {
             return;
         }
 
@@ -30,7 +30,7 @@ class Web implements Output
             return;
         }
 
-        if ($request->ajax()) {
+        if ($request->ajax() || $request->expectsJson()) {
 
             if ($queries && config('indexer.check_ajax_requests', false)) {
                 $response->headers->set('indexer_ajax_response', json_encode($queries));
@@ -129,168 +129,142 @@ OUTOUT;
         $output .= '</div>';
 
         $output .= <<< OUTOUT
-        <script>
-            // toggle indexer results page
-            document.querySelector(".indexer_query_info").addEventListener("click", function(e) {
-                var indexer = document.querySelector(".indexer");
-                e.preventDefault();
-                
-                indexer.style.display = indexer.style.display === "none" ? "block" : "none";
-            });          
-        </script>
+
+<script>
+// toggle indexer results page
+document.querySelector(".indexer_query_info").addEventListener("click", function(e) {
+    var indexer = document.querySelector(".indexer");
+    e.preventDefault();
+    
+    indexer.style.display = indexer.style.display === "none" ? "block" : "none";
+});          
+</script>
 OUTOUT;
 
         if (config('indexer.check_ajax_requests', false)) {
             $output .= <<< OUTOUT
             
-            <script>
-            // intercept ajax requests to see if Indexer detected any queries
-            (function (XHR) {
-                "use strict";
-    
-                var open = XHR.prototype.open;
-                var send = XHR.prototype.send;
-                
-                var alreadyAdded = [];
-    
-                XHR.prototype.open = function (method, url, async, user, pass) {
-                    this._url = url;
-                    open.call(this, method, url, async, user, pass);
-                };
-    
-                XHR.prototype.send = function (data) {
-                    var self = this;
-                    var oldOnReadyStateChange;
-                    var url = this._url;
-    
-                    function onReadyStateChange() {
-                        if (self.readyState === 4) {
-                            var headers = parseResponseHeaders(this.getAllResponseHeaders()).indexer_ajax_response || null;
-                            
-                            if (headers) {                                
-                                var output = '<div class="padded"><strong>Added from Ajax Request</strong></div>';                        
-                                var count = 0;
-                                var optimizedCount = 0;
+<script>
+(function(open) {
 
-                                var queries = JSON.parse(headers);
+    var alreadyAdded = [];
 
-                                for(var x in queries) {
-                                    if (queries.hasOwnProperty(x)) {
-                                        count++;
+    XMLHttpRequest.prototype.open = function(method, url, async, user, pass) {
+        this.addEventListener("readystatechange", function() {
+            if (this.readyState === 4) {
+                var headers = parseResponseHeaders(this.getAllResponseHeaders()).indexer_ajax_response || null;
 
-                                        var total = parseInt(document.querySelector(".indexer_total").innerHTML, 10);
-                                        var optimized = parseInt(document.querySelector(".indexer_opt").innerHTML, 10);
+                if (headers) {
+                    var output = '<div class="padded"><strong>Added from Ajax Request</strong></div>';
+                    var count = 0;
+                    var optimizedCount = 0;
 
-                                        if (!alreadyAdded.includes(x)) {
-                                            alreadyAdded.push(x);
+                    var queries = JSON.parse(headers);
 
-                                            var hasOptimized = queries[x]['explain_result']['key'] && queries[x]['explain_result']['key'].trim();
-                                            var bgColor = hasOptimized ? '#91e27f' : '#dae0e5';
+                    for (var x in queries) {
+                        if (queries.hasOwnProperty(x)) {
+                            count++;
 
-                                            output += '<div class="indexer_section">';
-                                            output += '<div class="indexer_section_details" style="background: ' + bgColor + '">';
-                                            output += "<div class='left'><strong>" + queries[x]['index_name'] + "</strong></div>";
-                                            output += "<div class='right'><strong>" + queries[x]['time'] + "</strong></div>";
-                                            output += "<div class='clear'></div>";
-                                            output += '</div>';
-                                            output += "<div class='padded'>";
-                                            output += "File: <strong>" + queries[x]['file'] + "</strong><br>";
-                                            output += "Line: <strong>" + queries[x]['line'] + "</strong>";
-                                            output += '</div>';
-                                            output += '<div class="sql">' + queries[x]['sql'] + '</div>';
-                                            output += indexerTable(queries[x]['explain_result']);
+                            var total = parseInt(document.querySelector(".indexer_total").innerHTML, 10);
+                            var optimized = parseInt(document.querySelector(".indexer_opt").innerHTML, 10);
 
-                                            if (queries[x]['hints']) {
-                                                output += "<div class='padded'>";
+                            if (!alreadyAdded.includes(x)) {
+                                alreadyAdded.push(x);
 
-                                                queries[x]['hints'].forEach(function(item) {
-                                                    output += "<span class='hint'>Hint</span> <strong>" + item + "</strong><br>";
-                                                });
+                                var hasOptimized = queries[x]['explain_result']['key'] && queries[x]['explain_result']['key'].trim();
+                                var bgColor = hasOptimized ? '#91e27f' : '#dae0e5';
 
-                                                output += '</div>';
-                                            }
+                                output += '<div class="indexer_section">';
+                                output += '<div class="indexer_section_details" style="background: ' + bgColor + '">';
+                                output += "<div class='left'><strong>" + queries[x]['index_name'] + "</strong></div>";
+                                output += "<div class='right'><strong>" + queries[x]['time'] + "</strong></div>";
+                                output += "<div class='clear'></div>";
+                                output += '</div>';
+                                output += "<div class='padded'>";
+                                output += "File: <strong>" + queries[x]['file'] + "</strong><br>";
+                                output += "Line: <strong>" + queries[x]['line'] + "</strong>";
+                                output += '</div>';
+                                output += '<div class="sql">' + queries[x]['sql'] + '</div>';
+                                output += indexerTable(queries[x]['explain_result']);
 
-                                            output += '</div>';
-                                            
-                                            document.querySelector(".indexer_ajax_placeholder").innerHTML += output;
-                                            document.querySelector(".indexer_total").innerHTML = (total + count);
-                                            
-                                            if (hasOptimized) {
-												optimizedCount++;
-                                                document.querySelector(".indexer_query_info").style.background = '#a1ff8e';
-                                                document.querySelector(".indexer_opt").innerHTML = (optimized + optimizedCount);   
-                                            }
-                                            
-                                            document.querySelector(".indexer_alert").innerHTML = ((total + count) - count) + " new result(s) added from ajax request.";
-                                            document.querySelector(".indexer_alert").style.display = "block";
+                                if (queries[x]['hints']) {
+                                    output += "<div class='padded'>";
 
-                                            setTimeout(function() {
-                                                document.querySelector(".indexer_alert").style.display = "none";
-                                            }, 10000);
+                                    queries[x]['hints'].forEach(function(item) {
+                                        output += "<span class='hint'>Hint</span> <strong>" + item + "</strong><br>";
+                                    });
 
-                                        }
-                                    }
+                                    output += '</div>';
                                 }
+
+                                output += '</div>';
+
+                                document.querySelector(".indexer_ajax_placeholder").innerHTML += output;
+                                document.querySelector(".indexer_total").innerHTML = (total + count);
+
+                                if (hasOptimized) {
+                                    optimizedCount++;
+                                    document.querySelector(".indexer_query_info").style.background = '#a1ff8e';
+                                    document.querySelector(".indexer_opt").innerHTML = (optimized + optimizedCount);
+                                }
+
+                                document.querySelector(".indexer_alert").innerHTML = ((total + count) - count) + " new result(s) added from ajax request.";
+                                document.querySelector(".indexer_alert").style.display = "block";
+
+                                setTimeout(function() {
+                                    document.querySelector(".indexer_alert").style.display = "none";
+                                }, 10000);
+
                             }
                         }
-
-                        if (oldOnReadyStateChange) {
-                            oldOnReadyStateChange();
-                        }
                     }
-    
-                    /* Set xhr.noIntercept to true to disable the interceptor for a particular call */
-                    if (!this.noIntercept) {
-                        if (this.addEventListener) {
-                            this.addEventListener("readystatechange", onReadyStateChange, false);
-                        } else {
-                            oldOnReadyStateChange = this.onreadystatechange;
-                            this.onreadystatechange = onReadyStateChange;
-                        }
-                    }
-    
-                    send.call(this, data);
-                };
-                
-                function parseResponseHeaders(headerStr) {
-                    return Object.fromEntries(
-                        (headerStr || '').split('\\u000d\\u000a')
-                            .map(line => line.split('\\u003a\\u0020'))
-                            .filter(pair => pair[0] !== undefined && pair[1] !== undefined)
-                    );
                 }
-                
-                function indexerTable(obj) {
-                    var html = '<table class="indexer_table">';
-                    
-                    html += '<tr>';
-                    Object.keys(obj).forEach(function (item, index) {
-                      html += '<th>' + item + '</th>';
-                    });
-                    html += '</tr>';
-                    
-                    html += '<tr>';
-                    Object.values(obj).forEach(function (item, index) {
-                      html += '<td>' + (item || '') + '</td>';
-                    });
-                    html += '</tr>';
-                    
-                    html += '</table>';
-                    
-                    return html;
-                }                
+            }
+        }, false);
 
-                if (!String.prototype.trim) {
-                    (function() {
-                        var rtrim = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;
-                        String.prototype.trim = function() {
-                            return this.replace(rtrim, '');
-                        };
-                    })();
-                }
-                
-            })(XMLHttpRequest);
-        </script>
+        open.call(this, method, url, async, user, pass);
+    };
+
+    function parseResponseHeaders(headerStr) {
+        return Object.fromEntries(
+            (headerStr || '').split('\\u000d\\u000a')
+            .map(line => line.split('\\u003a\\u0020'))
+            .filter(pair => pair[0] !== undefined && pair[1] !== undefined)
+        );
+    }
+
+    function indexerTable(obj) {
+        var html = '<table class="indexer_table">';
+
+        html += '<tr>';
+        Object.keys(obj).forEach(function(item, index) {
+            html += '<th>' + item + '</th>';
+        });
+        html += '</tr>';
+
+        html += '<tr>';
+        Object.values(obj).forEach(function(item, index) {
+            html += '<td>' + (item || '') + '</td>';
+        });
+        html += '</tr>';
+
+        html += '</table>';
+
+        return html;
+    }
+
+    if (!String.prototype.trim) {
+        (function() {
+            var rtrim = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;
+            String.prototype.trim = function() {
+                return this.replace(rtrim, '');
+            };
+        })();
+    }
+
+})(XMLHttpRequest.prototype.open);
+</script>
+
 OUTOUT;
         }
 

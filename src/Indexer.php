@@ -64,6 +64,8 @@ class Indexer
      */
     public function enableDetection()
     {
+        DB::enableQueryLog();
+
         $this->detectQueries = true;
     }
 
@@ -72,6 +74,8 @@ class Indexer
      */
     public function disableDetection()
     {
+        DB::disableQueryLog();
+
         $this->detectQueries = false;
     }
 
@@ -208,7 +212,7 @@ class Indexer
                 $addedIndexesComposite = $this->applyIndexes($compositeIndexes);
 
             } catch (Exception $e) {
-                dump('Indexer Error: ' . $e->getLine() . ' - ' . $e->getMessage());
+                //dump('Indexer Error: ' . $e->getLine() . ' - ' . $e->getMessage());
             } finally {
                 // just in case - again remove any custom added indexes
                 $this->removeUserDefinedIndexes($addedIndexes);
