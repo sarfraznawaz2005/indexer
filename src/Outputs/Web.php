@@ -67,6 +67,7 @@ class Web implements Output
                 .indexer_query_info .number { font-weight: bold !important; font-size: 24px !important; }
                 .indexer_alert { background: #a1ff8e !important; padding:2px 5px !important; border-radius: 5px !important; position:fixed !important; z-index:2147483647 !important; bottom:70px !important; right:45px !important;}
                 .indexer_small { font-size: .90rem !important;}
+                .indexer .indexer_nothing { text-align: center !important; position: absolute !important; top:150px !important; width: 96% !important; font-weight: bold !important; font-size: 34px !important; color:#c0c0c0 !important; }
                 .indexer pre { background: #fff !important; color:#000 !important; padding:10px; !important; margin:0 !important; border: none !important; }
                 .indexer { width:100% !important; height:100% !important; position: fixed !important; background: #edf1f3 !important; top:0 !important; left:0 !important; color:#000 !important; padding:25px !important; z-index:999999999 !important; margin:0; overflow:auto; font-family: arial, sans-serif !important; font-size:1rem !important; line-height: 1.4rem !important; }
                 .indexer * { font-size:0.83rem !important; }
@@ -109,7 +110,7 @@ OUTOUT;
 
         $output .= '<div class="indexer_ajax_placeholder"></div>';
 
-        if ($queries) {
+        if ($totalQueries) {
             $skippedTables = array_unique(end($queries)['skippedTables']);
 
             if ($skippedTables) {
@@ -118,9 +119,12 @@ OUTOUT;
                 $output .= '<div class="padded">' . implode(' | ', $skippedTables) . '</div>';
                 $output .= '</div>';
             }
+
+            $output .= '<div style="margin:0 0 75px 0 !important;"></div>';
+        } else {
+            $output .= '<div class="indexer_nothing">Nothing Yet :(</div>';
         }
 
-        $output .= '<div style="margin:0 0 75px 0 !important;"></div>';
         $output .= '</div>';
 
         $output .= <<< OUTOUT
@@ -192,7 +196,7 @@ OUTOUT;
 
                             output += '</div>';
 
-                            document.querySelector(".indexer_ajax_placeholder").innerHTML += output;
+                            document.querySelector(".indexer .indexer_ajax_placeholder").innerHTML += output;
                             document.querySelector(".indexer_total").innerHTML = (total + count);
 
                             if (hasOptimized) {
@@ -200,6 +204,8 @@ OUTOUT;
                                 document.querySelector(".indexer_query_info").style.background = '#a1ff8e';
                                 document.querySelector(".indexer_opt").innerHTML = (optimized + optimizedCount);
                             }
+                            
+                            document.querySelector(".indexer .indexer_nothing").style.display = "none";
 
                             document.querySelector(".indexer_alert").innerHTML = "New result(s) added from ajax request.";
                             document.querySelector(".indexer_alert").style.display = "block";
