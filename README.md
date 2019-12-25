@@ -38,7 +38,7 @@ Sarfraznawaz2005\Indexer\ServiceProvider::class,
 Publish package's config file by running below command:
 
 ```bash
-$ php artisan vendor:publish --provider="Sarfraznawaz2005\Indexer\ServiceProvider"
+php artisan vendor:publish --provider="Sarfraznawaz2005\Indexer\ServiceProvider"
 ```
 It should publish `config/indexer.php` config file.
 

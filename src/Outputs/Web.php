@@ -153,25 +153,19 @@ OUTOUT;
 
             if (headers) {
                 var output = '<div class="info"><strong>Added from Ajax Request</strong></div>';
-                var count = 0;
-                var optimizedCount = 0;
 
                 var queries = JSON.parse(headers);
 
                 for (var x in queries) {
                     if (queries.hasOwnProperty(x)) {
-                        count++;
-
-                        var total = parseInt(document.querySelector(".indexer_total").innerHTML, 10);
-                        var optimized = parseInt(document.querySelector(".indexer_opt").innerHTML, 10);
-
                         if (!alreadyAdded.includes(x)) {
                             alreadyAdded.push(x);
 
                             var hasOptimized = queries[x]['explain_result']['key'] && queries[x]['explain_result']['key'].trim();
                             var bgColor = hasOptimized ? '#91e27f' : '#dae0e5';
-
-                            output += '<div class="indexer_section">';
+                            var optimizedClass = hasOptimized ? 'optimized' : '';
+                            
+                            output += '<div class="indexer_section ' + optimizedClass + '">';
                             output += '<div class="indexer_section_details" style="background: ' + bgColor + '">';
                             output += "<div class='left'><strong>" + queries[x]['index_name'] + "</strong></div>";
                             output += "<div class='right'><strong>" + queries[x]['time'] + "</strong></div>";
@@ -196,17 +190,22 @@ OUTOUT;
 
                             output += '</div>';
 
-                            document.querySelector(".indexer .indexer_ajax_placeholder").innerHTML += output;
-                            document.querySelector(".indexer_total").innerHTML = (total + count);
-
-                            if (hasOptimized) {
-                                optimizedCount++;
-                                document.querySelector(".indexer_query_info").style.background = '#a1ff8e';
-                                document.querySelector(".indexer_opt").innerHTML = (optimized + optimizedCount);
+                            if (document.querySelector(".indexer .indexer_nothing")) {
+                                document.querySelector(".indexer .indexer_nothing").style.display = "none";
                             }
                             
-                            document.querySelector(".indexer .indexer_nothing").style.display = "none";
+                            document.querySelector(".indexer .indexer_ajax_placeholder").innerHTML += output;
+                            
+                            var total = document.querySelectorAll(".indexer .indexer_section").length;
+                            var optimizedTotal = document.querySelectorAll(".indexer .optimized").length;
+                            
+                            document.querySelector(".indexer_total").innerHTML = total;
+                            document.querySelector(".indexer_opt").innerHTML = optimizedTotal;
 
+                            if (hasOptimized) {
+                                document.querySelector(".indexer_query_info").style.background = '#a1ff8e';
+                            }
+                            
                             document.querySelector(".indexer_alert").innerHTML = "New result(s) added from ajax request.";
                             document.querySelector(".indexer_alert").style.display = "block";
 

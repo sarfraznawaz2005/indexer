@@ -30,8 +30,9 @@ if (!function_exists('indexerMakeExplainResults')) {
         foreach ($queries as $query) {
 
             $bgColor = indexerOptimizedKey($query) ? '#91e27f' : '#dae0e5';
+            $optimizedClass = indexerOptimizedKey($query) ? 'optimized' : '';
 
-            $output .= '<div class="indexer_section">';
+            $output .= "<div class='indexer_section $optimizedClass'>";
             $output .= '<div class="indexer_section_details" style="background: ' . $bgColor . '">';
             $output .= "<div class='left'><strong>$query[index_name]</strong></div>";
             $output .= "<div class='right'><strong>$query[time]</strong></div>";
