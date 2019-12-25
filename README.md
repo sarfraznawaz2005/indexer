@@ -117,7 +117,11 @@ In this case, both `email` and `title` indexes are supposed to be already added 
 
  - Color of Indexer box on top right or query results changes to green if it finds query's `EXPLAIN` result has `key` present eg query actually used a key. This can be changed by overwriting function `indexerOptimizedKey` which is present in file `src/Helpers.php`.
 
-### Security
+## Limitations ##
+
+Indexer tries to find out tables names after `FROM` keyword in queries, therefore it cannot work with complex queries or ones that don't have table name after `FROM` keyword.
+
+## Security
 
 If you discover any security related issues, please email sarfraznawaz2005@gmail.com instead of using the issue tracker.
 
