@@ -34,10 +34,10 @@ return [
      * These paths/patterns will NOT be handled by Indexer.
      */
     'ignore_paths' => [
-        // foo
-        // foo*
-        // *foo
-        // *foo*
+        // 'foo',
+        // 'foo*',
+        // '*foo',
+        // '*foo*',
     ],
 
     /*

@@ -23,16 +23,14 @@ class Indexer
 
     /** @var QueryExecuted */
     protected $queryEvent;
-
     protected $table = '';
 
-    protected $queries = [];
-
     protected $source = [];
-
     protected $skippedTables = [];
-
     protected $unremovedIndexes = [];
+
+    public $queries = [];
+    public $skippedQueries = [];
 
     /**
      * Starts things up.
@@ -105,10 +103,12 @@ class Indexer
         $this->source = $this->getCallerFromStackTrace();
         //dump($this->table);
 
-        if ($this->isAllowedRequest() && $this->isSelectQuery()) {
+        if ($this->isSelectQuery() && $this->isValidTable()) {
             $this->disableDetection();
             $this->tryIndexes();
             $this->enableDetection();
+        } else {
+            $this->skippedQueries = $this->getSql();
         }
     }
 
@@ -158,26 +158,17 @@ class Indexer
     }
 
     /**
-     * Check if we are handling allowed request/page.
+     * See if table we found exists in DB
      *
      * @return bool
      */
-    protected function isAllowedRequest(): bool
+    protected function isValidTable(): bool
     {
-        $ignoredPaths = array_merge([
-            '*indexer*',
-            '*meter*',
-            '*debugbar*',
-            '*_debugbar*',
-            '*clockwork*',
-            '*_clockwork*',
-            '*telescope*',
-            '*horizon*',
-            '*vendor/horizon*',
-            '*nova-api*',
-        ], config('indexer.ignore_paths', []));
+        $table = $this->table;
 
-        return !app()->request->is($ignoredPaths);
+        $tables = DB::connection()->getDoctrineSchemaManager()->listTableNames();
+
+        return in_array($table, $tables, true);
     }
 
     /**

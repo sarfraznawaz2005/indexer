@@ -50,17 +50,46 @@ class IndexerMiddleware
         }
 
         if (!$request->isMethod('get')) {
-            return false;
-        }
-
-        if ($request->is('*indexer*')) {
-            return false;
+            if (!$request->ajax() && !$request->expectsJson()) {
+                return false;
+            }
         }
 
         if ($response instanceof BinaryFileResponse) {
             return false;
         }
 
+        if ($response->isRedirection()) {
+            return false;
+        }
+
+        if (!$this->isAllowedRequest()) {
+            return false;
+        }
+
         return true;
+    }
+
+    /**
+     * Check if we are handling allowed request/page.
+     *
+     * @return bool
+     */
+    protected function isAllowedRequest(): bool
+    {
+        $ignoredPaths = array_merge([
+            '*indexer*',
+            '*meter*',
+            '*debugbar*',
+            '*_debugbar*',
+            '*clockwork*',
+            '*_clockwork*',
+            '*telescope*',
+            '*horizon*',
+            '*vendor/horizon*',
+            '*nova-api*',
+        ], config('indexer.ignore_paths', []));
+
+        return !app()->request->is($ignoredPaths);
     }
 }
