@@ -68,8 +68,8 @@ class Web implements Output
                 .indexer_alert { background: #a1ff8e !important; padding:2px 5px !important; border-radius: 5px !important; position:fixed !important; z-index:2147483647 !important; bottom:70px !important; right:45px !important;}
                 .indexer_small { font-size: .90rem !important;}
                 .indexer pre { background: #fff !important; color:#000 !important; padding:10px; !important; margin:0 !important; border: none !important; }
-                .indexer { width:100% !important; height:100% !important; position: fixed !important; background: #edf1f3 !important; top:0 !important; left:0 !important; color:#000 !important; padding:25px !important; z-index:999999999 !important; margin:0; overflow:auto; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif !important; font-size:1rem !important; line-height: 1rem !important; }
-                .indexer * { font-size:.75rem !important; }
+                .indexer { width:100% !important; height:100% !important; position: fixed !important; background: #edf1f3 !important; top:0 !important; left:0 !important; color:#000 !important; padding:25px !important; z-index:999999999 !important; margin:0; overflow:auto; font-family: arial, sans-serif !important; font-size:1rem !important; line-height: 1.4rem !important; }
+                .indexer * { font-size:0.83rem !important; }
                 .indexer_section { background: #fff !important; margin:0 0 20px 0 !important; border:1px solid #dae0e5 !important; border-radius:5px !important; }
                 .indexer_section_details { padding:10px !important; font-size:.90rem !important; background: #dae0e5; }
                 .indexer .sql { border: 1px solid #e8ebed !important; color:#666; !important; padding: 10px 10px !important; margin: 5px 13px !important; font-weight: bold !important; background: #f4f6f7 !important; }
