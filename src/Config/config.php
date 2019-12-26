@@ -51,5 +51,5 @@ return [
     /*
      * Font size (including unit) in case of Web output class
      */
-    'font_size' => '20px',
+    'font_size' => '12px',
 ];

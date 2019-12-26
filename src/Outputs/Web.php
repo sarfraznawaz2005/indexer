@@ -61,7 +61,7 @@ class Web implements Output
     {
         $output = '';
 
-        $fontSize = config('indexer.font_size', '0.83rem');
+        $fontSize = config('indexer.font_size', '12px');
 
         $output .= <<< OUTOUT
             <style>
