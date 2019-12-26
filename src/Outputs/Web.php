@@ -120,8 +120,6 @@ OUTOUT;
                 $output .= '<div class="padded">' . implode(' | ', $skippedTables) . '</div>';
                 $output .= '</div>';
             }
-
-            $output .= '<div style="margin:0 0 75px 0 !important;"></div>';
         } else {
             $output .= '<div class="indexer_nothing">Nothing Yet :(</div>';
         }
