@@ -148,7 +148,7 @@ OUTOUT;
 
     XMLHttpRequest.prototype.open = function(method, url, async, user, pass) {
         this.addEventListener('load', function() {
-            var headers = parseResponseHeaders(this.getAllResponseHeaders().toLowerCase()).indexer_ajax_response || null;
+            var headers = parseResponseHeaders(this.getAllResponseHeaders()).indexer_ajax_response || null;
 
             if (headers) {
                 var output = '<div class="info"><strong>Added from Ajax Request</strong></div>';
