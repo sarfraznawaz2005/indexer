@@ -46,5 +46,10 @@ return [
     'output_to' => [
         // outputs results into current visited page.
         Sarfraznawaz2005\Indexer\Outputs\Web::class,
-    ]
+    ],
+
+    /*
+     * Font size (including unit) in case of Web output class
+     */
+    'font_size' => '20px',
 ];
