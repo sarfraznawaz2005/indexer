@@ -116,7 +116,6 @@ OUTOUT;
             $skippedTables = array_unique(end($queries)['skippedTables']);
 
             if ($skippedTables) {
-                $output .= '<div class="indexer_section">';
                 $output .= '<div class="indexer_section_details">Following tables were skipped:</div>';
                 $output .= '<div class="padded">' . implode(' | ', $skippedTables) . '</div>';
                 $output .= '</div>';

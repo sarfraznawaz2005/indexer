@@ -3,6 +3,10 @@
 if (!function_exists('indexerOptimizedKey')) {
     function indexerOptimizedKey(array $query): string
     {
+        if (function_exists('indexerOptimizedKeyCustom')) {
+            return indexerOptimizedKeyCustom($query);
+        }
+
         return trim($query['explain_result']['key']);
     }
 }

@@ -115,7 +115,7 @@ In this case, both `email` and `title` indexes are supposed to be already added 
 
 ## Misc ##
 
- - Color of Indexer box on bottom right or query results changes to green if it finds query's `EXPLAIN` result has `key` present eg query actually used a key. This can be changed by overwriting function `indexerOptimizedKey` which is present in file `src/Helpers.php`.
+ - Color of Indexer box on bottom right or query results changes to green if it finds query's `EXPLAIN` result has `key` present eg query actually used a key. This can be changed by creating your own function in your codebase called `indexerOptimizedKeyCustom(array $queries)` instead of default one `indexerOptimizedKey` which is present in file `src/Helpers.php`.
 
 ## Limitations ##
 
