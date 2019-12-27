@@ -176,44 +176,47 @@ class Indexer
      */
     protected function tryIndexes()
     {
+        $indexes = [];
         $addedIndexes = [];
-        $addedIndexesComposite = [];
 
         $table = $this->table;
 
-        if (array_key_exists($table, config('indexer.watched_tables', []))) {
-            $tableIndexeOptions = config("indexer.watched_tables.$table", []);
+        try {
 
-            $tableOriginalIndexes = $this->getTableOriginalIndexes();
-            $tableIndexes = $tableIndexeOptions['try_table_indexes'] ?? [];
-            $newIndexes = $tableIndexeOptions['try_indexes'] ?? [];
-            $compositeIndexes = $tableIndexeOptions['try_composite_indexes'] ?? [];
+            if (config('indexer.watched_tables', [])) {
+                if (array_key_exists($table, config('indexer.watched_tables', []))) {
 
-            $indexes = array_merge($tableIndexes, $newIndexes);
+                    $tableIndexeOptions = config("indexer.watched_tables.$table", []);
 
-            try {
+                    $tableOriginalIndexes = $this->getTableOriginalIndexes();
+                    $tableIndexes = $tableIndexeOptions['try_table_indexes'] ?? [];
+                    $newIndexes = $tableIndexeOptions['try_indexes'] ?? [];
+                    $compositeIndexes = $tableIndexeOptions['try_composite_indexes'] ?? [];
 
-                // try individual indexes
-                $addedIndexes = $this->applyIndexes($indexes);
+                    $indexes = array_merge($tableIndexes, $newIndexes, $compositeIndexes);
 
-                // remove any custom added indexes
-                $this->removeUserDefinedIndexes($addedIndexes);
+                    $addedIndexes = $this->applyIndexes($indexes);
 
-                // try composite indexes
-                $addedIndexesComposite = $this->applyIndexes($compositeIndexes);
+                    $this->removeUserDefinedIndexes($addedIndexes);
+                } else {
+                    $this->skippedTables[] = $table;
+                }
 
-            } catch (Exception $e) {
-                //dump('Indexer Error: ' . $e->getLine() . ' - ' . $e->getMessage());
-            } finally {
-                // just in case - again remove any custom added indexes
-                $this->removeUserDefinedIndexes($addedIndexes);
-                $this->removeUserDefinedIndexes($addedIndexesComposite);
+            } else {
+                // just run EXPLAIN on all SELECT queries running on the page
+                $this->applyIndexes([]);
+            }
 
-                // make sure we have deleted added indexes
+        } catch (Exception $e) {
+            dump('Indexer Error: ' . $e->getLine() . ' - ' . $e->getMessage());
+        } finally {
+            // just in case - again remove any custom added indexes
+            $this->removeUserDefinedIndexes($addedIndexes);
+
+            // make sure we have deleted added indexes
+            if ($indexes) {
                 $this->unremovedIndexes = $this->checkAnyUnremovedIndexes($tableOriginalIndexes);
             }
-        } else {
-            $this->skippedTables[] = $table;
         }
     }
 
@@ -256,25 +259,30 @@ class Indexer
     {
         $addedIndexes = [];
 
-        foreach ($indexes as $index) {
+        if ($indexes) {
+            foreach ($indexes as $index) {
 
-            $key = $this->makeKey($index);
+                $indexName = is_array($index) ? $this->getLaravelIndexName($index) : $index;
+                $key = $this->makeKey($indexName . $this->getSql());
 
-            // don't do anything if we have already checked this query
-            if (array_key_exists($key, $this->queries)) {
-                continue;
+                // don't do anything if we have already checked this query
+                if (array_key_exists($key, $this->queries)) {
+                    continue;
+                }
+
+                if (!$this->indexExists($index)) {
+                    $addedIndexes[] = $index;
+
+                    $this->addIndex($index);
+                    $this->explainQuery($index, false);
+                    $this->removeIndex($index);
+
+                } else {
+                    $this->explainQuery($index);
+                }
             }
-
-            if (!$this->indexExists($index)) {
-                $addedIndexes[] = $index;
-
-                $this->addIndex($index);
-                $this->explainQuery($index, false);
-                $this->removeIndex($index);
-
-            } else {
-                $this->explainQuery($index, true);
-            }
+        } else {
+            $this->explainQuery();
         }
 
         return $addedIndexes;
@@ -349,18 +357,23 @@ class Indexer
      * Collects EXPLAIN info and stores in queries var.
      *
      * @param $index
-     * @param $isIndexAlreadyPresentOnTable
+     * @param bool $isIndexAlreadyPresentOnTable
      */
-    protected function explainQuery($index, $isIndexAlreadyPresentOnTable)
+    protected function explainQuery($index = null, $isIndexAlreadyPresentOnTable = true)
     {
-        $indexType = $isIndexAlreadyPresentOnTable ? 'Already Present On Table' : 'Added By Indexer';
-        $indexName = is_array($index) ? $this->getLaravelIndexName($index) : $index;
-        $indexName = "$indexName ($indexType)";
-
         $event = $this->queryEvent;
-
         $sql = $this->getSql();
         $hints = $this->performQueryAnalysis($sql);
+
+        $indexName = $title = $this->table;
+
+        if ($index) {
+            $indexType = $isIndexAlreadyPresentOnTable ? 'Already Present On Table' : 'Added By Indexer';
+            $indexName = is_array($index) ? $this->getLaravelIndexName($index) : $index;
+            $title = "{$this->table} &rarr; $indexName ($indexType)";
+        }
+
+        $key = $this->makeKey($indexName . $sql);
 
         $result = DB::select(DB::raw('EXPLAIN ' . $sql))[0] ?? null;
 
@@ -368,13 +381,14 @@ class Indexer
             $queryResult['explain_result'] = (array)$result;
             $queryResult['sql'] = $sql;
             $queryResult['time'] = number_format($event->time, 2) . 'ms';
+            $queryResult['title'] = $title;
             $queryResult['index_name'] = $indexName;
             $queryResult['file'] = $this->source['file'];
             $queryResult['line'] = $this->source['line'];
             $queryResult['hints'] = $hints;
             $queryResult['skippedTables'] = $this->skippedTables;
 
-            $this->queries[$this->makeKey($indexName)] = $queryResult;
+            $this->queries[$key] = $queryResult;
         }
     }
 

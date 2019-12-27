@@ -56,7 +56,7 @@ if (!function_exists('indexerMakeExplainResults')) {
 
             $output .= "<div class='indexer_section $optimizedClass'>";
             $output .= '<div class="indexer_section_details" style="background: ' . $bgColor . '">';
-            $output .= "<div class='left'><strong>$query[index_name]</strong></div>";
+            $output .= "<div class='left'><strong>$query[title]</strong></div>";
             $output .= "<div class='right'><strong>$query[time]</strong></div>";
             $output .= "<div class='clear'></div>";
             $output .= '</div>';

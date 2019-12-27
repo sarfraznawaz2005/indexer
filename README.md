@@ -94,11 +94,11 @@ In this mode, you can actually see which indexes work best without actually appl
 
 **Already Present Indexes + Indexes Added By Indexer**
 
-You might have some indexes already present on your tables but you want to try out more indexes on the fly without actually adding to the table via `try_indexes` and/or `try_composite_indexes` options. To specify table's existing indexes, use `try_table_indexes` option as mentioned earlier. Table's existing indexes (specified in `try_table_indexes`) will remain intact but indexes added via `try_indexes` and `try_composite_indexes` will be automatically removed.
+You might have some indexes already present on your tables but you want to try out more indexes on the fly without actually adding those to the table. To specify table's existing indexes, use `try_table_indexes` option as mentioned earlier. And to try out new indexes on the fly, use `try_indexes` and/or `try_composite_indexes` options. Table's existing indexes (specified in `try_table_indexes`) will remain intact but indexes added via `try_indexes` and `try_composite_indexes` will be automatically removed.
 
 **Already Present Indexes**
 
-When you don't want Indexer to add any indexes on the fly and you have already specified indexes on your tables and you just want to see `EXPLAIN` results for different queries running on a page for your indexes, in this case simply use `try_table_indexes` option only. Example:
+When you don't want Indexer to add any indexes on the fly and you have already specified indexes on your tables and you just want to see `EXPLAIN` results for specific tables for your indexes, in this case simply use `try_table_indexes` option only. Example:
 
 ````php
 'watched_tables' => [
@@ -113,13 +113,32 @@ When you don't want Indexer to add any indexes on the fly and you have already s
 
 In this case, both `email` and `title` indexes are supposed to be already added to table manually.
 
+**No Indexes, Just Show EXPLAIN results for all SELECT queries**
+
+While previous three modes allow you to work with *specific tables and indexes*, you can use this mode to just show EXPLAIN results for all SELECT queries running on a page without adding any indexes on the fly. To use this mode, simply don't specify any tables in `watched_tables` option.
+
 ## Misc ##
 
- - Color of Indexer box on bottom right or query results changes to green if it finds query's `EXPLAIN` result has `key` present eg query actually used a key. This can be changed by creating your own function in your codebase called `indexerOptimizedKeyCustom(array $queries)` instead of default one `indexerOptimizedKey` which is present in file `src/Helpers.php`.
+ - Color of Indexer box on bottom right or query results changes to green if it finds query's `EXPLAIN` result has `key` present eg query actually used a key. This can be changed by creating your own function in your codebase called `indexerOptimizedKeyCustom(array $queries)` instead of default one `indexerOptimizedKey` which is present in file `src/Helpers.php`. Similarly, for ajax requests, you should define your own function called `indexerOptimizedKeyCustom(explain_result)`. Here is example of each:
+ 
+ ````php
+// php
+function indexerOptimizedKey(array $query): string
+{
+    return trim($query['explain_result']['key']);
+}
+ ````
+
+````javascript
+// javascript
+function indexerOptimizedKey(explain_result) {
+    return explain_result['key'] && explain_result['key'].trim();
+}
+````
 
 ## Limitations ##
 
-Indexer tries to find out tables names after `FROM` keyword in queries, therefore it cannot work with complex queries or ones that don't have table name after `FROM` keyword.
+* Indexer tries to find out tables names after `FROM` keyword in queries, therefore it cannot work with complex queries or ones that don't have table name after `FROM` keyword.
 
 ## Security
 

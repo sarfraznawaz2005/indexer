@@ -98,12 +98,7 @@ OUTOUT;
             $indexerColor = '#fff382';
         }
 
-        // do we have any tables to watch
-        if (!config('indexer.watched_tables', [])) {
-            $output .= '<a href="#" class="indexer_query_info" style="background: ' . $indexerColor . ' !important;">INDEXER <span class="indexer_small">(No Tables Defined)</span></a>';
-        } else {
-            $output .= '<a href="#" class="indexer_query_info" style="background: ' . $indexerColor . ' !important;">INDEXER <span class="number"><span class="indexer_opt">' . $optimizationsCount . '</span>/<span class="indexer_total">' . $totalQueries . '</span></span></a>';
-        }
+        $output .= '<a href="#" class="indexer_query_info" style="background: ' . $indexerColor . ' !important;">INDEXER <span class="number"><span class="indexer_opt">' . $optimizationsCount . '</span>/<span class="indexer_total">' . $totalQueries . '</span></span></a>';
 
         $output .= '<div class="indexer_alert" style="display: none;"></div>';
 
@@ -164,36 +159,37 @@ OUTOUT;
             var headers = parseResponseHeaders(this.getAllResponseHeaders()).indexer_ajax_response || null;
 
             if (headers) {
-                var output = '<div class="info"><strong>Added from Ajax Request</strong></div>';
-
                 var queries = JSON.parse(headers);
-
+                
                 for (var x in queries) {
                     if (queries.hasOwnProperty(x)) {
                         if (!alreadyAdded.includes(x)) {
                             alreadyAdded.push(x);
 
-                            var hasOptimized = indexerOptimizedKey(queries[x]['explain_result']);
+                            var output = '';
+                            var query = queries[x];
+                            var hasOptimized = indexerOptimizedKey(query['explain_result']);
                             var bgColor = hasOptimized ? '#91e27f' : '#dae0e5';
                             var optimizedClass = hasOptimized ? 'optimized' : '';
-                            
+
+                            output += '<div class="info"><strong>Added from Ajax Request</strong></div>';
                             output += '<div class="indexer_section ' + optimizedClass + '">';
                             output += '<div class="indexer_section_details" style="background: ' + bgColor + '">';
-                            output += "<div class='left'><strong>" + queries[x]['index_name'] + "</strong></div>";
-                            output += "<div class='right'><strong>" + queries[x]['time'] + "</strong></div>";
+                            output += "<div class='left'><strong>" + query['title'] + "</strong></div>";
+                            output += "<div class='right'><strong>" + query['time'] + "</strong></div>";
                             output += "<div class='clear'></div>";
                             output += '</div>';
                             output += "<div class='padded'>";
-                            output += "File: <strong>" + queries[x]['file'] + "</strong><br>";
-                            output += "Line: <strong>" + queries[x]['line'] + "</strong>";
+                            output += "File: <strong>" + query['file'] + "</strong><br>";
+                            output += "Line: <strong>" + query['line'] + "</strong>";
                             output += '</div>';
-                            output += '<div class="sql">' + queries[x]['sql'] + '</div>';
-                            output += indexerTable(queries[x]['explain_result']);
+                            output += '<div class="sql">' + query['sql'] + '</div>';
+                            output += indexerTable(query['explain_result']);
 
-                            if (queries[x]['hints']) {
+                            if (query['hints']) {
                                 output += "<div class='padded'>";
 
-                                queries[x]['hints'].forEach(function(item) {
+                                query['hints'].forEach(function(item) {
                                     output += "<span class='hint'>Hint</span> <strong>" + item + "</strong><br>";
                                 });
 
@@ -242,7 +238,7 @@ OUTOUT;
             return indexerOptimizedKeyCustom(explain_result);
         }
         
-        return explain_result['key'].trim();
+        return explain_result['key'] && explain_result['key'].trim();
     }
 
     function parseResponseHeaders(headerStr) {
@@ -294,8 +290,6 @@ OUTOUT;
     private function compress($html): string
     {
         ini_set('pcre.recursion_limit', '16777');
-        // enable GZip, too!
-        ini_set('zlib.output_compression', 'On');
 
         $regEx = '%# Collapse whitespace everywhere but in blacklisted elements.
         (?>             # Match all whitespans other than single space.
