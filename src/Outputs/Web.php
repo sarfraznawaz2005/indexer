@@ -173,7 +173,7 @@ OUTOUT;
                         if (!alreadyAdded.includes(x)) {
                             alreadyAdded.push(x);
 
-                            var hasOptimized = queries[x]['explain_result']['key'] && queries[x]['explain_result']['key'].trim();
+                            var hasOptimized = indexerOptimizedKey(queries[x]['explain_result']);
                             var bgColor = hasOptimized ? '#91e27f' : '#dae0e5';
                             var optimizedClass = hasOptimized ? 'optimized' : '';
                             
@@ -235,6 +235,15 @@ OUTOUT;
 
         open.call(this, method, url, async, user, pass);
     };
+    
+    /* Decides if query is optimized */
+    function indexerOptimizedKey(explain_result) {
+        if (typeof indexerOptimizedKeyCustom !== 'undefined' && typeof indexerOptimizedKeyCustom === 'function') {
+            return indexerOptimizedKeyCustom(explain_result);
+        }
+        
+        return explain_result['key'].trim();
+    }
 
     function parseResponseHeaders(headerStr) {
         return Object.fromEntries(

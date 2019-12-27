@@ -1,6 +1,12 @@
 <?php
 
 if (!function_exists('indexerOptimizedKey')) {
+    /**
+     * Decides if query is optimized
+     *
+     * @param array $query
+     * @return string
+     */
     function indexerOptimizedKey(array $query): string
     {
         if (function_exists('indexerOptimizedKeyCustom')) {
@@ -12,6 +18,12 @@ if (!function_exists('indexerOptimizedKey')) {
 }
 
 if (!function_exists('indexerGetOptimizedCount')) {
+    /**
+     * Gets total count of optimized queries
+     *
+     * @param array $queries
+     * @return string
+     */
     function indexerGetOptimizedCount(array $queries): string
     {
         $optimizationsCount = 0;
@@ -27,6 +39,12 @@ if (!function_exists('indexerGetOptimizedCount')) {
 }
 
 if (!function_exists('indexerMakeExplainResults')) {
+    /**
+     * Creates result section.
+     *
+     * @param array $queries
+     * @return string
+     */
     function indexerMakeExplainResults(array $queries): string
     {
         $output = '';
@@ -67,6 +85,13 @@ if (!function_exists('indexerMakeExplainResults')) {
 }
 
 if (!function_exists('indexerTable')) {
+    /**
+     * Generates HTML table.
+     *
+     * @param $array
+     * @param bool $table
+     * @return string
+     */
     function indexerTable($array, $table = true): string
     {
         $out = '';
