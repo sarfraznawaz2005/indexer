@@ -67,7 +67,7 @@ class Web implements Output
             <style>
                 .indexer_query_info, .indexer_query_info:active .indexer_query_info:visited .indexer_query_info:hover { position:fixed !important; z-index:2147483647 !important; bottom:20px !important; right:45px !important; padding: 2px 10px 5px 10px !important; font-size:20px !important; border-radius:5px !important;color:#333 !important; text-decoration: none !important; }
                 .indexer_query_info .number { font-weight: bold !important; font-size: 24px !important; }
-                .indexer_alert { background: #a1ff8e !important; padding:2px 5px !important; border-radius: 5px !important; position:fixed !important; z-index:2147483647 !important; bottom:70px !important; right:45px !important;}
+                .indexer_alert { background: #a1ff8e !important; padding:2px 5px !important; border-radius: 5px !important; position:fixed !important; z-index:2147483647 !important; bottom:70px !important; right:45px !important; color:#000 !important}
                 .indexer_small { font-size: 70% !important;}
                 .indexer .indexer_nothing { text-align: center !important; position: absolute !important; top:150px !important; width: 96% !important; font-weight: bold !important; font-size: 34px !important; color:#c0c0c0 !important; }
                 .indexer pre { background: #fff !important; color:#000 !important; padding:10px; !important; margin:0 !important; border: none !important; }
@@ -75,7 +75,8 @@ class Web implements Output
                 .indexer * { font-size:$fontSize !important; }
                 .indexer_section { background: #fff !important; margin:0 0 20px 0 !important; border:1px solid #dae0e5 !important; border-radius:5px !important; }
                 .indexer_section_details { padding:10px !important; background: #dae0e5; }
-                .indexer .sql { border: 1px solid #e8ebed !important; color:#666; !important; padding: 10px 10px !important; margin: 5px 13px !important; font-weight: bold !important; background: #f4f6f7 !important; }
+                .indexer .sql { border: 1px solid #e8ebed !important; color:#666; !important; padding: 10px 10px !important; margin: 5px 13px !important; font-weight: bold !important;  }
+                .indexer .sql_keyword { color:royalblue !important; text-transform: uppercase !important; }
                 .indexer .left { float: left !important; }
                 .indexer .right { float: right !important; }
                 .indexer .clear { clear: both !important; }
@@ -129,12 +130,24 @@ OUTOUT;
         $output .= <<< OUTOUT
 
 <script>
-document.querySelector(".indexer_query_info").addEventListener("click", function(e) {
-    var indexer = document.querySelector(".indexer");
-    e.preventDefault();
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelector(".indexer_query_info").addEventListener("click", function(e) {
+        var indexer = document.querySelector(".indexer");
+        e.preventDefault();
+        
+        indexer.style.display = indexer.style.display === "none" ? "block" : "none";    
+    });
     
-    indexer.style.display = indexer.style.display === "none" ? "block" : "none";
-});          
+    indexerHighlight();
+});
+
+function indexerHighlight() {
+    var sqlReg = /\b(AND|AS|ASC|BETWEEN|BY|CASE|CURRENT_DATE|CURRENT_TIME|DELETE|DESC|DISTINCT|EACH|ELSE|ELSEIF|FALSE|FOR|FROM|GROUP|HAVING|IF|IN|INSERT|INTERVAL|INTO|IS|JOIN|KEY|KEYS|LEFT|LIKE|LIMIT|MATCH|NOT|NULL|ON|OPTION|OR|ORDER|OUT|OUTER|REPLACE|RIGHT|SELECT|SET|TABLE|THEN|TO|TRUE|UPDATE|VALUES|WHEN|WHERE|CREATE|ALTER|ALL|DATABASE|GRANT|PRIVILEGES|IDENTIFIED|FLUSH|INNER|COUNT)(?=[^\w])/ig;
+
+    document.querySelectorAll(".indexer .sql").forEach(function(item) {
+        item.innerHTML = item.innerHTML.replace(sqlReg,'<span class="sql_keyword">$1</span>');
+    });
+}
 </script>
 OUTOUT;
 
@@ -142,7 +155,7 @@ OUTOUT;
             $output .= <<< OUTOUT
             
 <script>
-(function(open) {
+(function(open, window) {
 
     var alreadyAdded = [];
 
@@ -205,13 +218,15 @@ OUTOUT;
                                 document.querySelector(".indexer_query_info").style.background = '#a1ff8e';
                             }
                             
+                            window.indexerHighlight();
+                            
                             document.querySelector(".indexer_alert").innerHTML = "New result(s) added from ajax request.";
                             document.querySelector(".indexer_alert").style.display = "block";
 
                             setTimeout(function() {
                                 document.querySelector(".indexer_alert").style.display = "none";
                             }, 10000);
-
+                            
                         }
                     }
                 }
@@ -250,7 +265,7 @@ OUTOUT;
         return html;
     }
 
-})(XMLHttpRequest.prototype.open);
+})(XMLHttpRequest.prototype.open, window);
 </script>
 
 OUTOUT;
