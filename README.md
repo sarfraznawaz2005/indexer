@@ -56,6 +56,8 @@ When enabled, you will see yellow/green box on bottom right. Click it to toggle 
 
 `check_ajax_requests` : Specify whether to check queries in ajax requests.
 
+`ignore_tables` : When you don't use "watched_tables" option, Indexer watches all tables. Using this option, you can ignore specified tables to be watched.
+
 `ignore_paths` : These paths/patterns will NOT be handled by Indexer.
 
 `output_to` : Outputs results to given classes. By default `Web` class is included.
@@ -81,6 +83,7 @@ When enabled, you will see yellow/green box on bottom right. Click it to toggle 
      - `try_table_indexes` contains index names that you have already applied to your DB table. Indexer will simply try out your existing indexes to show `EXPLAIN` results. In this case, `email` index already exists in `users` table.
      - `try_indexes` can be used to add new indexes on the fly to DB table. In this case, `name` index will be added on the fly by Indexer and results will be shown of how that index performed.
      - Like `try_indexes` the `try_composite_indexes` can also be used to add composite indexes on the fly to DB table. In this case, composite index consisting of `name` and `email` will be added on the fly by Indexer and results will be shown of how that index performed.
+
 
 ## Modes ##
 
@@ -115,7 +118,7 @@ In this case, both `email` and `title` indexes are supposed to be already added 
 
 **No Indexes, Just Show EXPLAIN results for all SELECT queries**
 
-While previous three modes allow you to work with *specific tables and indexes*, you can use this mode to just show EXPLAIN results for all SELECT queries running on a page without adding any indexes on the fly. To use this mode, simply don't specify any tables in `watched_tables` option.
+While previous three modes allow you to work with *specific tables and indexes*, you can use this mode to just show EXPLAIN results for all SELECT queries running on a page without adding any indexes on the fly. To use this mode, simply don't specify any tables in `watched_tables` option. If you don't want to include some tables in this mode, use `ignore_tables` option.
 
 ## Misc ##
 

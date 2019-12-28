@@ -94,7 +94,7 @@ OUTOUT;
         $totalQueries = count($queries);
         $optimizationsCount = indexerGetOptimizedCount($queries);
 
-        if (!$optimizationsCount || !config('indexer.watched_tables', [])) {
+        if (!$optimizationsCount) {
             $indexerColor = '#fff382';
         }
 

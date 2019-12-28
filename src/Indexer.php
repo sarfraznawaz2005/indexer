@@ -178,6 +178,7 @@ class Indexer
     {
         $indexes = [];
         $addedIndexes = [];
+        $tableOriginalIndexes = $this->getTableOriginalIndexes();
 
         $table = $this->table;
 
@@ -188,7 +189,6 @@ class Indexer
 
                     $tableIndexeOptions = config("indexer.watched_tables.$table", []);
 
-                    $tableOriginalIndexes = $this->getTableOriginalIndexes();
                     $tableIndexes = $tableIndexeOptions['try_table_indexes'] ?? [];
                     $newIndexes = $tableIndexeOptions['try_indexes'] ?? [];
                     $compositeIndexes = $tableIndexeOptions['try_composite_indexes'] ?? [];
@@ -204,7 +204,11 @@ class Indexer
 
             } else {
                 // just run EXPLAIN on all SELECT queries running on the page
-                $this->applyIndexes([]);
+                if (!in_array($table, config('indexer.ignore_tables', []), true)) {
+                    $this->applyIndexes([]);
+                } else {
+                    $this->skippedTables[] = $table;
+                }
             }
 
         } catch (Exception $e) {
@@ -388,6 +392,9 @@ class Indexer
             $queryResult['hints'] = $hints;
             $queryResult['skippedTables'] = $this->skippedTables;
 
+            // remove any chars that cause problem in JSON response
+            $queryResult = $this->arrayReplace($queryResult, ':', '');
+
             $this->queries[$key] = $queryResult;
         }
     }
@@ -401,6 +408,29 @@ class Indexer
     protected function makeKey($indexName): string
     {
         return md5($this->getLaravelIndexName($indexName) . $this->getSql());
+    }
+
+    /**
+     * Replaces chars in nested array.
+     *
+     * @param $array
+     * @param $find
+     * @param $replace
+     * @return array
+     */
+    protected function arrayReplace($array, $find, $replace): array
+    {
+        if (is_array($array)) {
+            foreach ($array as $key => $val) {
+                if (is_array($array[$key])) {
+                    $array[$key] = $this->arrayReplace($array[$key], $find, $replace);
+                } else {
+                    $array[$key] = str_ireplace($find, $replace, $array[$key]);
+                }
+            }
+        }
+
+        return $array;
     }
 
     /**
@@ -425,9 +455,7 @@ class Indexer
         }
 
         if (preg_match('/ORDER BY RAND()/i', $query)) {
-            $hints[] = '<code>ORDER BY RAND()</code> is slow, try to avoid if you can.
-				You can <a href="http://stackoverflow.com/questions/2663710/how-does-mysqls-order-by-rand-work" target="_blank">read this</a>
-				or <a href="http://stackoverflow.com/questions/1244555/how-can-i-optimize-mysqls-order-by-rand-function" target="_blank">this</a>';
+            $hints[] = '<code>ORDER BY RAND()</code> is slow, try to avoid if you can. You can <a href="http://stackoverflow.com/questions/2663710/how-does-mysqls-order-by-rand-work" target="_blank">read this</a> or <a href="http://stackoverflow.com/questions/1244555/how-can-i-optimize-mysqls-order-by-rand-function" target="_blank">this</a>';
         }
 
         if (strpos($query, '!=') !== false) {
@@ -443,8 +471,7 @@ class Indexer
         }
 
         if (preg_match('/LIKE\\s[\'"](%.*?)[\'"]/i', $query, $matches)) {
-            $hints[] = 'An argument has a leading wildcard character: <code>' . $matches[1] . '</code>.
-								The predicate with this argument is not sargable and cannot use an index if one exists.';
+            $hints[] = 'An argument has a leading wildcard character: <code>' . $matches[1] . '</code>. The predicate with this argument is not sargable and cannot use an index if one exists.';
         }
 
         return $hints;
