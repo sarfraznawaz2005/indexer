@@ -368,6 +368,7 @@ class Indexer
         $event = $this->queryEvent;
         $sql = $this->getSql();
         $hints = $this->performQueryAnalysis($sql);
+        $isSlow = false;
 
         $indexName = $title = $this->table;
 
@@ -390,6 +391,12 @@ class Indexer
             $queryResult['file'] = $this->source['file'];
             $queryResult['line'] = $this->source['line'];
             $queryResult['hints'] = $hints;
+
+            if ($configTime = config('indexer.slow_time', 0)) {
+                $isSlow = $queryResult['time'] >= $configTime;
+            }
+
+            $queryResult['slow'] = $isSlow;
             $queryResult['skippedTables'] = $this->skippedTables;
 
             // remove any chars that cause problem in JSON response

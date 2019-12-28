@@ -31,6 +31,20 @@ return [
     ],
 
     /*
+    * When you don't use "watched_tables" option, Indexer watches all tables.
+    * Using this option, you can ignore specified tables to be watched.
+    */
+    'ignore_tables' => [
+        //
+    ],
+
+    /*
+    * Time in ms when queries will be considered slow (>=). A slow query will
+    * be highlighted with red color. Value of 0 means no color change.
+    */
+    'slow_time' => 20,
+
+    /*
      * These paths/patterns will NOT be handled by Indexer.
      */
     'ignore_paths' => [

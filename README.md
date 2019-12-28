@@ -46,7 +46,7 @@ It should publish `config/indexer.php` config file.
 
 ## Screenshot ##
 
-When enabled, you will see yellow/green box on bottom right. Click it to toggle results. Box will turn green if it finds there is `key` present in any of queries' execution plan.
+When enabled, you will see yellow/green/red box on bottom right. Click it to toggle results. Box will turn green if it finds there is `key` present in any of queries' execution plan. It will turn red if it finds any slow queries denoted by option `slow_time`.
 
 ![Main Window](https://github.com/sarfraznawaz2005/indexer/blob/master/screenshot.jpg?raw=true)
 
@@ -59,6 +59,8 @@ When enabled, you will see yellow/green box on bottom right. Click it to toggle 
 `ignore_tables` : When you don't use `watched_tables` option, Indexer watches all tables. Using this option, you can ignore specified tables to be watched.
 
 `ignore_paths` : These paths/patterns will NOT be handled by Indexer.
+
+`slow_time` : Time in ms when queries will be considered slow.
 
 `output_to` : Outputs results to given classes. By default `Web` class is included.
 
@@ -138,6 +140,8 @@ function indexerOptimizedKey(explain_result) {
     return explain_result['key'] && explain_result['key'].trim();
 }
 ````
+
+*Note: If Indexer has found any slow queries (enabled via `slow_time` option), the color of box on bottom right will always be red until you fix slow queries.*
 
 ## Limitations ##
 

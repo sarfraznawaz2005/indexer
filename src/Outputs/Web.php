@@ -74,6 +74,9 @@ class Web implements Output
                 .indexer { font-size:$fontSize !important; line-height: 150% !important; width:100% !important; height:100% !important; position: fixed !important; background: #edf1f3 !important; top:0 !important; left:0 !important; color:#000 !important; padding:25px !important; z-index:999999999 !important; margin:0; overflow:auto; font-family: arial, sans-serif !important; }
                 .indexer * { font-size:$fontSize !important; }
                 .indexer_section { background: #fff !important; margin:0 0 20px 0 !important; border:1px solid #dae0e5 !important; border-top:0 !important; }
+                .indexer_section .optimized{ background: #91e27f !important; }
+                .indexer_section .normal{ background: #dae0e5 !important; }
+                .indexer_section .slow{ background: #ff6586 !important; }
                 .indexer_section_details { padding:10px !important; background: #dae0e5; }
                 .indexer .sql { background: #f4f6f7 !important; color:#c7254e; !important; padding: 10px 10px !important; margin: 5px 13px !important; font-weight: bold !important; font-family: Menlo, Monaco, Consolas, "Courier New", monospace; }
                 .indexer .sql_keyword { color:royalblue !important; text-transform: uppercase !important; }
@@ -81,8 +84,9 @@ class Web implements Output
                 .indexer .right { float: right !important; }
                 .indexer .clear { clear: both !important; }
                 .indexer .padded { padding:10px !important; color:#555 !important; }
-                .indexer .hint { background: #a1ff8e !important; padding:2px 5px !important; border-radius: 5px !important; margin: 0 0 5px 0 !important; display: inline-block !important; font-weight: bold !important; }
-                .indexer .info { background: #dae0e5 !important; padding:2px 5px !important; border-radius: 5px !important; margin: 0 0 5px 0 !important; display: inline-block !important; color:#444 !important; }
+                .indexer code { font-weight: bold !important; }
+                .indexer .hint { background: #a1ff8e !important; padding:2px 5px !important; border-radius: 5px !important; margin: 0 0 5px 0 !important; display: inline-block !important; }
+                .indexer .info { background: #d0d4d8 !important; padding:2px 5px !important; margin: 0 0 5px 0 !important; display: inline-block !important; color:#333 !important; }
                 .indexer .error { background:#ff6586 !important; color:#fff !important; font-weight:bold !important; text-align:center !important; border:1px solid red !important; padding:10px !important; margin:10px 0 !important;}
                 .indexer .indexer_table * { background:#f4f6f7 !important; color:#555; !important; }
                 .indexer .indexer_table { border-collapse: collapse !important; width: 98% !important; margin: 10px auto !important;}
@@ -93,13 +97,18 @@ OUTOUT;
 
         $indexerColor = '#a1ff8e';
         $totalQueries = count($queries);
-        $optimizationsCount = indexerGetOptimizedCount($queries);
+        $optimizedCount = indexerGetOptimizedCount($queries);
+        $slowCount = indexerGetSlowCount($queries);
 
-        if (!$optimizationsCount) {
+        if (!$optimizedCount) {
             $indexerColor = '#fff382';
         }
 
-        $output .= '<a href="#" class="indexer_query_info" style="background: ' . $indexerColor . ' !important;">INDEXER <span class="number"><span class="indexer_opt">' . $optimizationsCount . '</span>/<span class="indexer_total">' . $totalQueries . '</span></span></a>';
+        if ($slowCount) {
+            $indexerColor = '#ff6586';
+        }
+
+        $output .= '<a href="#" class="indexer_query_info" style="background: ' . $indexerColor . ' !important;">INDEXER <span class="number"><span class="indexer_opt">' . $optimizedCount . '</span>/<span class="indexer_total">' . $totalQueries . '</span></span></a>';
 
         $output .= '<div class="indexer_alert" style="display: none;"></div>';
 
@@ -170,19 +179,22 @@ OUTOUT;
                             var output = '';
                             var query = queries[x];
                             var hasOptimized = indexerOptimizedKey(query['explain_result']);
-                            var bgColor = hasOptimized ? '#91e27f' : '#dae0e5';
-                            var optimizedClass = hasOptimized ? 'optimized' : '';
+                            var sectionClass = hasOptimized ? 'optimized' : 'normal';
+                            
+                            if (query['slow'] == true) {
+                                sectionClass = 'slow';
+                            }
 
-                            output += '<div class="info"><strong>Added from Ajax Request</strong></div>';
-                            output += '<div class="indexer_section ' + optimizedClass + '">';
-                            output += '<div class="indexer_section_details" style="background: ' + bgColor + '">';
+                            output += '<div class="info">Via Ajax Request</div>';
+                            output += '<div class="indexer_section">';
+                            output += '<div class="indexer_section_details ' + sectionClass + '">';
                             output += "<div class='left'><strong>" + query['title'] + "</strong></div>";
                             output += "<div class='right'><strong>" + query['time'] + "</strong></div>";
                             output += "<div class='clear'></div>";
                             output += '</div>';
                             output += "<div class='padded'>";
-                            output += "File: <strong>" + query['file'] + "</strong><br>";
-                            output += "Line: <strong>" + query['line'] + "</strong>";
+                            output += "File: " + query['file'] + "<br>";
+                            output += "Line: " + query['line'] + "";
                             output += '</div>';
                             output += '<div class="sql">' + query['sql'] + '</div>';
                             output += indexerTable(query['explain_result']);
@@ -191,7 +203,7 @@ OUTOUT;
                                 output += "<div class='padded'>";
 
                                 query['hints'].forEach(function(item) {
-                                    output += "<span class='hint'>Hint</span> <strong>" + item + "</strong><br>";
+                                    output += "<span class='hint'>Hint</span> " + item + "<br>";
                                 });
 
                                 output += '</div>';
@@ -207,12 +219,17 @@ OUTOUT;
                             
                             var total = document.querySelectorAll(".indexer .indexer_section").length;
                             var optimizedTotal = document.querySelectorAll(".indexer .optimized").length;
+                            var slowTotal = document.querySelectorAll(".indexer .slow").length;
                             
                             document.querySelector(".indexer_total").innerHTML = total;
                             document.querySelector(".indexer_opt").innerHTML = optimizedTotal;
-
-                            if (hasOptimized) {
-                                document.querySelector(".indexer_query_info").style.background = '#a1ff8e';
+                            
+                            if (slowTotal) {
+                                document.querySelector(".indexer_query_info").style.background = '#ff6586';
+                            } else {
+                                if (optimizedTotal) {
+                                    document.querySelector(".indexer_query_info").style.background = '#a1ff8e';
+                                }
                             }
                             
                             window.indexerHighlight();

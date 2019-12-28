@@ -26,15 +26,36 @@ if (!function_exists('indexerGetOptimizedCount')) {
      */
     function indexerGetOptimizedCount(array $queries): string
     {
-        $optimizationsCount = 0;
+        $count = 0;
 
         foreach ($queries as $query) {
             if (indexerOptimizedKey($query)) {
-                $optimizationsCount++;
+                $count++;
             }
         }
 
-        return $optimizationsCount;
+        return $count;
+    }
+}
+
+if (!function_exists('indexerGetSlowCount')) {
+    /**
+     * Gets total count of slow queries
+     *
+     * @param array $queries
+     * @return string
+     */
+    function indexerGetSlowCount(array $queries): string
+    {
+        $count = 0;
+
+        foreach ($queries as $query) {
+            if ($query['slow']) {
+                $count++;
+            }
+        }
+
+        return $count;
     }
 }
 
@@ -51,18 +72,21 @@ if (!function_exists('indexerMakeExplainResults')) {
 
         foreach ($queries as $query) {
 
-            $bgColor = indexerOptimizedKey($query) ? '#91e27f' : '#dae0e5';
-            $optimizedClass = indexerOptimizedKey($query) ? 'optimized' : '';
+            $sectionClass = indexerOptimizedKey($query) ? 'optimized' : 'normal';
 
-            $output .= "<div class='indexer_section $optimizedClass'>";
-            $output .= '<div class="indexer_section_details" style="background: ' . $bgColor . '">';
+            if ($query['slow']) {
+                $sectionClass = 'slow';
+            }
+
+            $output .= "<div class='indexer_section'>";
+            $output .= "<div class='indexer_section_details $sectionClass'>";
             $output .= "<div class='left'><strong>$query[title]</strong></div>";
             $output .= "<div class='right'><strong>$query[time]</strong></div>";
             $output .= "<div class='clear'></div>";
             $output .= '</div>';
             $output .= "<div class='padded'>";
-            $output .= "File: <strong>$query[file]</strong><br>";
-            $output .= "Line: <strong>$query[line]</strong>";
+            $output .= "File: $query[file]<br>";
+            $output .= "Line: $query[line]";
             $output .= '</div>';
             $output .= '<div class="sql">' . $query['sql'] . '</div>';
             $output .= indexerTable([$query['explain_result']]);
@@ -71,7 +95,7 @@ if (!function_exists('indexerMakeExplainResults')) {
                 $output .= "<div class='padded'>";
 
                 foreach ($query['hints'] as $hint) {
-                    $output .= "<span class='hint'>Hint</span> <strong>$hint</strong><br>";
+                    $output .= "<span class='hint'>Hint</span> $hint<br>";
                 }
 
                 $output .= '</div>';
