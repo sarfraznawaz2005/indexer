@@ -73,7 +73,7 @@ class Web implements Output
                 .indexer pre { background: #fff !important; color:#000 !important; padding:10px; !important; margin:0 !important; border: none !important; }
                 .indexer { font-size:$fontSize !important; line-height: 150% !important; width:100% !important; height:100% !important; position: fixed !important; background: #edf1f3 !important; top:0 !important; left:0 !important; color:#000 !important; padding:25px !important; z-index:999999999 !important; margin:0; overflow:auto; font-family: arial, sans-serif !important; }
                 .indexer * { font-size:$fontSize !important; }
-                .indexer_section { background: #fff !important; margin:0 0 20px 0 !important; }
+                .indexer_section { background: #fff !important; margin:0 0 20px 0 !important; border:1px solid #dae0e5 !important; border-top:0 !important; }
                 .indexer_section_details { padding:10px !important; background: #dae0e5; }
                 .indexer .sql { background: #f4f6f7 !important; color:#c7254e; !important; padding: 10px 10px !important; margin: 5px 13px !important; font-weight: bold !important; font-family: Menlo, Monaco, Consolas, "Courier New", monospace; }
                 .indexer .sql_keyword { color:royalblue !important; text-transform: uppercase !important; }
