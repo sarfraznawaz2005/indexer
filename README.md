@@ -56,7 +56,7 @@ When enabled, you will see yellow/green box on bottom right. Click it to toggle 
 
 `check_ajax_requests` : Specify whether to check queries in ajax requests.
 
-`ignore_tables` : When you don't use "watched_tables" option, Indexer watches all tables. Using this option, you can ignore specified tables to be watched.
+`ignore_tables` : When you don't use `watched_tables` option, Indexer watches all tables. Using this option, you can ignore specified tables to be watched.
 
 `ignore_paths` : These paths/patterns will NOT be handled by Indexer.
 
