@@ -75,7 +75,7 @@ class Web implements Output
                 .indexer * { font-size:$fontSize !important; }
                 .indexer_section { background: #fff !important; margin:0 0 20px 0 !important; border:1px solid #dae0e5 !important; border-radius:5px !important; }
                 .indexer_section_details { padding:10px !important; background: #dae0e5; }
-                .indexer .sql { border: 1px solid #e8ebed !important; color:#666; !important; padding: 10px 10px !important; margin: 5px 13px !important; font-weight: bold !important;  }
+                .indexer .sql { background: #f4f6f7 !important; color:#c7254e; !important; padding: 10px 10px !important; margin: 5px 13px !important; font-weight: bold !important; font-family: Menlo, Monaco, Consolas, "Courier New", monospace; }
                 .indexer .sql_keyword { color:royalblue !important; text-transform: uppercase !important; }
                 .indexer .left { float: left !important; }
                 .indexer .right { float: right !important; }
@@ -86,7 +86,8 @@ class Web implements Output
                 .indexer .error { background:#ff6586 !important; color:#fff !important; font-weight:bold !important; text-align:center !important; border:1px solid red !important; padding:10px !important; margin:10px 0 !important;}
                 .indexer .indexer_table * { background:#f4f6f7 !important; color:#555; !important; }
                 .indexer .indexer_table { border-collapse: collapse !important; width: 98% !important; margin: 10px auto !important;}
-                .indexer .indexer_table td, .indexer .indexer_table th { padding: 3px !important; font-weight: normal !important; text-align: center !important; border: 1px solid #e8ebed; word-wrap: break-word !important;}
+                .indexer .indexer_table td, .indexer .indexer_table th { padding: 5px !important; font-weight: normal !important; text-align: center !important; border: 1px solid #dae0e5; word-wrap: break-word !important;}
+                .indexer .indexer_table th { background: #eaeced !important;}
             </style>
 OUTOUT;
 
