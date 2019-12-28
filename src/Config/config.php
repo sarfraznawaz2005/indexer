@@ -39,12 +39,6 @@ return [
     ],
 
     /*
-    * Time in ms when queries will be considered slow (>=). A slow query will
-    * be highlighted with red color. Value of 0 means no color change.
-    */
-    'slow_time' => 20,
-
-    /*
      * These paths/patterns will NOT be handled by Indexer.
      */
     'ignore_paths' => [
@@ -53,6 +47,12 @@ return [
         // '*foo',
         // '*foo*',
     ],
+
+    /*
+    * Time in ms when queries will be considered slow (>=). A slow query will
+    * be highlighted with red color. Value of 0 means no color change.
+    */
+    'slow_time' => 0,
 
     /*
      * Outputs results class.
