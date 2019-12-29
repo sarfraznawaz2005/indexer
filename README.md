@@ -132,7 +132,7 @@ While previous three modes allow you to work with *specific tables and indexes*,
  
  ````php
 // php
-function indexerOptimizedKey(array $query): string
+function indexerOptimizedKeyCustom(array $query): string
 {
     return trim($query['explain_result']['key']);
 }
@@ -140,7 +140,7 @@ function indexerOptimizedKey(array $query): string
 
 ````javascript
 // javascript
-function indexerOptimizedKey(explain_result) {
+function indexerOptimizedKeyCustom(explain_result) {
     return explain_result['key'] && explain_result['key'].trim();
 }
 ````
