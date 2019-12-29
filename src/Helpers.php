@@ -29,7 +29,7 @@ if (!function_exists('indexerGetOptimizedCount')) {
         $count = 0;
 
         foreach ($queries as $query) {
-            if (indexerOptimizedKey($query)) {
+            if (!$query['slow'] && indexerOptimizedKey($query)) {
                 $count++;
             }
         }

@@ -46,7 +46,11 @@ It should publish `config/indexer.php` config file.
 
 ## Screenshot ##
 
-When enabled, you will see yellow/green/red box on bottom right. Click it to toggle results. Box will turn green if it finds there is `key` present in any of queries' execution plan. It will turn red if it finds any slow queries denoted by option `slow_time`.
+When enabled, you will see yellow/green/red box on bottom right:
+
+ - Yellow by default or when queries need to be optimized
+ - Green when total queries count matches optimized queries count.
+ - Red when one or more slow queries found and need to be optimized.
 
 ![Main Window](https://github.com/sarfraznawaz2005/indexer/blob/master/screenshot.jpg?raw=true)
 
@@ -124,7 +128,7 @@ While previous three modes allow you to work with *specific tables and indexes*,
 
 ## Misc ##
 
- - Color of Indexer box on bottom right or query results changes to green if it finds query's `EXPLAIN` result has `key` present eg query actually used a key. This can be changed by creating your own function in your codebase called `indexerOptimizedKeyCustom(array $queries)` instead of default one `indexerOptimizedKey` which is present in file `src/Helpers.php`. Similarly, for ajax requests, you should define your own function called `indexerOptimizedKeyCustom(explain_result)`. Here is example of each:
+ - Color of Indexer box on bottom right or query sections inside results changes to green if it finds query's `EXPLAIN` result has `key` present eg query actually used a key. This can be changed by creating your own function in your codebase called `indexerOptimizedKeyCustom(array $queries)` instead of default one `indexerOptimizedKey` which is present in file `src/Helpers.php`. Similarly, for ajax requests, you should define your own function called `indexerOptimizedKeyCustom(explain_result)`. Here is example of each:
  
  ````php
 // php
@@ -143,7 +147,7 @@ function indexerOptimizedKey(explain_result) {
 
 *Note: If Indexer has found any slow queries (enabled via `slow_time` option), the color of box on bottom right will always be red until you fix slow queries.*
 
-## Limitations ##
+## Limitation ##
 
 * Indexer tries to find out tables names after `FROM` keyword in queries, therefore it cannot work with complex queries or ones that don't have table name after `FROM` keyword.
 
