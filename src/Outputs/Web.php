@@ -113,13 +113,16 @@ class Web implements Output
                 .indexer .indexer_table { border-collapse: collapse !important; width: 98% !important; margin: 10px auto !important;}
                 .indexer .indexer_table td, .indexer .indexer_table th { padding: 5px !important; font-weight: normal !important; text-align: center !important; border: 1px solid #dae0e5; word-wrap: break-word !important;}
                 .indexer .indexer_table th { background: #eaeced !important;}
+                .indexer label {  display: block !important; padding-left: 15px !important; text-indent: -15px !important; }
+                .indexer #indexer_toggle_optimized { padding: 0 !important; margin:0 !important; vertical-align: bottom !important; position: relative !important; top: -3px !important; *overflow: hidden !important;  }
             </style>
 OUTOUT;
 
 
         $output .= '<a href="#" class="indexer_query_info" style="background: ' . $indexerColor . ' !important;">INDEXER <span class="number"><span class="indexer_opt">' . $optimizedCount . '</span>/<span class="indexer_total">' . $totalCount . '</span></span></a>';
         $output .= '<div class="indexer_alert" style="display: none;"></div>';
-        $output .= '<div class="indexer" style="display: none;">';
+        $output .= '<div class="indexer" id="indexer" style="display: none;">';
+        $output .= '<label for="indexer_toggle_optimized"><input type="checkbox" id="indexer_toggle_optimized"> Hide Optimized</label>';
         $output .= indexerMakeExplainResults($queries);
         $output .= '<div class="indexer_ajax_placeholder"></div>';
 
@@ -145,8 +148,18 @@ document.addEventListener('DOMContentLoaded', function() {
         var indexer = document.querySelector(".indexer");
         e.preventDefault();
         
-        indexer.style.display = indexer.style.display === "none" ? "block" : "none";    
+        indexer.style.display = indexer.style.display === "none" ? "block" : "none";        
+		indexer.scrollTop = 0;
     });
+    
+    document.querySelector("#indexer_toggle_optimized").addEventListener("click", function(e) {
+        var optimizedEls = document.querySelectorAll(".indexer .optimized");
+        var checked = this.checked;
+        
+		[].forEach.call(optimizedEls, (el) => {
+			el.parentNode.style.display = checked ? "none" : "block";
+		});
+    });    
     
     indexerHighlight();
 });
@@ -182,6 +195,8 @@ OUTOUT;
                             alreadyAdded.push(x);
 
                             var output = '';
+                            var hideOptimized = document.querySelector("#indexer_toggle_optimized").checked;
+                            var displaySection = 'block';
                             var query = queries[x];
                             var hasOptimized = indexerOptimizedKey(query['explain_result']);
                             var sectionClass = hasOptimized ? 'optimized' : 'normal';
@@ -189,11 +204,14 @@ OUTOUT;
                             if (query['slow'] == true) {
                                 sectionClass = 'slow';
                             }
-
-                            output += '<div class="info">Via Ajax Request</div>';
-                            output += '<div class="indexer_section">';
+                            
+                            if (hasOptimized && hideOptimized) {
+								displaySection = 'none';
+                            }
+                            
+                            output += '<div class="indexer_section" style="display:' + displaySection + '">';
                             output += '<div class="indexer_section_details ' + sectionClass + '">';
-                            output += "<div class='left'><strong>" + query['title'] + "</strong></div>";
+                            output += "<div class='left'><strong>" + query['title'] + "</strong> (Via Ajax Request)</div>";
                             output += "<div class='right'><strong>" + query['time'] + "</strong></div>";
                             output += "<div class='clear'></div>";
                             output += '</div>';
@@ -257,7 +275,7 @@ OUTOUT;
         open.call(this, method, url, async, user, pass);
     };
     
-    /* Decides if query is optimized */
+    /* decides if query is optimized */
     function indexerOptimizedKey(explain_result) {
         if (typeof indexerOptimizedKeyCustom !== 'undefined' && typeof indexerOptimizedKeyCustom === 'function') {
             return indexerOptimizedKeyCustom(explain_result);
