@@ -25,15 +25,17 @@ class IndexerMiddleware
      */
     public function handle($request, Closure $next)
     {
-        if ($this->canSendResponse($request, $next($request))) {
-            $this->indexer->boot();
-
-            $response = $next($request);
-
-            $this->indexer->outputResults($request, $response);
+        if (!$this->canSendResponse($request)) {
+            return $next($request);
         }
 
-        return $response ?? $next($request);
+        $this->indexer->boot();
+
+        $response = $next($request);
+
+        $this->indexer->outputResults($request, $response);
+
+        return $response;
     }
 
     /**
@@ -43,7 +45,7 @@ class IndexerMiddleware
      * @param $response
      * @return bool
      */
-    protected function canSendResponse(Request $request, $response): bool
+    protected function canSendResponse(Request $request): bool
     {
         if (!$this->indexer->isEnabled()) {
             return false;
@@ -53,14 +55,6 @@ class IndexerMiddleware
             if (!$request->ajax() && !$request->expectsJson()) {
                 return false;
             }
-        }
-
-        if ($response instanceof BinaryFileResponse) {
-            return false;
-        }
-
-        if ($response->isRedirection()) {
-            return false;
         }
 
         if (!$this->isAllowedRequest()) {

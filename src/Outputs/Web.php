@@ -3,6 +3,7 @@
 namespace Sarfraznawaz2005\Indexer\Outputs;
 
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
 
 class Web implements Output
@@ -16,6 +17,14 @@ class Web implements Output
     {
         if (stripos($response->headers->get('Content-Type'), 'text/html') !== 0) {
             //return;
+        }
+
+        if ($response instanceof BinaryFileResponse) {
+            return;
+        }
+
+        if ($response->isRedirection()) {
+            return;
         }
 
         if (app()->runningInConsole()) {
