@@ -24,6 +24,7 @@ class Indexer
     /** @var QueryExecuted */
     protected $queryEvent;
     protected $table = '';
+    protected $tables = [];
 
     protected $source = [];
     protected $skippedTables = [];
@@ -40,6 +41,8 @@ class Indexer
         if (!$this->isEnabled()) {
             return false;
         }
+
+        $this->tables = DB::connection()->getDoctrineSchemaManager()->listTableNames();
 
         app()->events->listen(QueryExecuted::class, [$this, 'analyzeQuery']);
 
@@ -164,11 +167,7 @@ class Indexer
      */
     protected function isValidTable(): bool
     {
-        $table = $this->table;
-
-        $tables = DB::connection()->getDoctrineSchemaManager()->listTableNames();
-
-        return in_array($table, $tables, true);
+        return in_array($this->table, $this->tables, true);
     }
 
     /**
