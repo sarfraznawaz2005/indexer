@@ -4,7 +4,7 @@
 
 # Laravel Indexer
 
-Laravel Indexer monitors `SELECT` queries running on a page and allows to add database indexes to `SELECT` queries on the fly. It then presents results of `EXPLAIN` or MySQL's execution plan right on the page. The results presents by Indexer will help you see which indexes work best for different queries running on a page. 
+Laravel Indexer monitors `SELECT` queries running on a page and allows to add database indexes to `SELECT` queries on the fly. It then presents results of `EXPLAIN` or MySQL's execution plan right on the page. The results presented by Indexer will help you see which indexes work best for different queries running on a page. 
 
 Indexes *added by Indexer* are automatically removed after results are collected while keeping your existing indexes intact.
 
@@ -75,7 +75,7 @@ When enabled, you will see yellow/green/red box on bottom right:
     'users' => [
         // list of already existing indexes to try
         'try_table_indexes' => ['email'],
-        // new indexes indexes to try
+        // new indexes to try
         'try_indexes' => ['name'],
         // new composite indexes to try
         'try_composite_indexes' => [
