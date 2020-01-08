@@ -23,7 +23,7 @@ Since this package adds indexes to database on the fly, it is strongly recommend
 Install via composer
 
 ```
-composer require sarfraznawaz2005/indexer
+composer require sarfraznawaz2005/indexer --dev
 ```
 
 For Laravel < 5.5:
