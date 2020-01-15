@@ -384,12 +384,13 @@ class Indexer
         if ($result) {
             $queryResult['explain_result'] = (array)$result;
             $queryResult['sql'] = $sql;
-            $queryResult['time'] = number_format($event->time, 2) . 'ms';
+            $queryResult['time'] = number_format($event->time, 2);
             $queryResult['title'] = $title;
             $queryResult['index_name'] = $indexName;
             $queryResult['file'] = $this->source['file'];
             $queryResult['line'] = $this->source['line'];
             $queryResult['hints'] = $hints;
+            $queryResult['url'] = \request()->fullUrl();
 
             if ($configTime = config('indexer.slow_time', 0)) {
                 $isSlow = $queryResult['time'] >= $configTime;
@@ -566,6 +567,9 @@ class Indexer
      */
     protected function applyOutput(Request $request, \Symfony\Component\HttpFoundation\Response $response)
     {
+        // sort by time descending
+        $this->queries = collect($this->queries)->sortByDesc('time')->all();
+
         foreach ($this->getOutputTypes() as $type) {
             app($type)->output($this->queries, $request, $response);
         }

@@ -81,7 +81,7 @@ if (!function_exists('indexerMakeExplainResults')) {
             $output .= "<div class='indexer_section'>";
             $output .= "<div class='indexer_section_details $sectionClass'>";
             $output .= "<div class='left'><strong>$query[title]</strong></div>";
-            $output .= "<div class='right'><strong>$query[time]</strong></div>";
+            $output .= "<div class='right'><strong>$query[time] ms</strong></div>";
             $output .= "<div class='clear'></div>";
             $output .= '</div>';
             $output .= "<div class='padded'>";
